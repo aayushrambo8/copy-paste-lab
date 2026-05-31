@@ -22,7 +22,9 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+    // Ensure window is defined before accessing hostname
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || `http://${hostname}:4000`;
     socketRef.current = io(socketUrl);
     const socket = socketRef.current;
 
@@ -136,32 +138,34 @@ export default function Session({ params }: { params: { sessionId: string } }) {
 
       <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col">
         
-        {/* Mobile/Desktop Paste Area */}
-        <div className="mb-8 relative group">
-          <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
-          <div 
-            className="relative glass-panel rounded-2xl p-6 text-center border border-accent/30 flex flex-col items-center justify-center min-h-[120px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent"
-            contentEditable
-            suppressContentEditableWarning
-            onPaste={handlePaste}
-          >
-            <div className="pointer-events-none flex flex-col items-center opacity-70">
-              <span className="text-xl md:text-2xl font-semibold text-white mb-2">Tap here & Paste</span>
-              <span className="text-sm text-gray-400">Supports text and images from clipboard</span>
+        {/* Mobile/Desktop Paste Area - Fixed to bottom */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-20 pointer-events-none">
+          <div className="max-w-4xl mx-auto relative group pointer-events-auto">
+            <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
+            <div 
+              className="relative glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[80px] md:min-h-[100px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md"
+              contentEditable
+              suppressContentEditableWarning
+              onPaste={handlePaste}
+            >
+              <div className="pointer-events-none flex flex-col items-center opacity-80">
+                <span className="text-lg md:text-xl font-bold text-white tracking-wide">Tap here & Paste</span>
+                <span className="text-xs md:text-sm text-gray-400 mt-1">Accepts text & images</span>
+              </div>
             </div>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 text-center text-gray-400 min-h-[40vh]">
+          <div className="flex flex-col items-center justify-center flex-1 text-center text-gray-400 min-h-[40vh] pb-24">
             <div className="w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/30 mb-6 relative animate-pulse-glow">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-accent rounded-full shadow-[0_0_20px_var(--tw-colors-accent)]"></div>
             </div>
             <h3 className="text-white text-2xl mb-2">Waiting for clipboard items...</h3>
-            <p className="max-w-md">Press <kbd className="bg-white/10 px-2 py-1 rounded text-white text-sm mx-1">Ctrl+V</kbd> anywhere, or tap the Paste area above.</p>
+            <p className="max-w-md">Press <kbd className="bg-white/10 px-2 py-1 rounded text-white text-sm mx-1">Ctrl+V</kbd> anywhere, or use the Paste box below.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-28">
             {items.map(item => (
               <ClipboardItem key={item.id} item={item} />
             ))}
