@@ -22,7 +22,8 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:4000');
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+    socketRef.current = io(socketUrl);
     const socket = socketRef.current;
 
     socket.emit('join-session', sessionId);
