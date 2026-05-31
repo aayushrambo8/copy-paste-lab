@@ -35,58 +35,71 @@ export default function Session({ params }: { params: { sessionId: string } }) {
       setItems(prev => [item, ...prev]);
     });
 
-    const handlePaste = (e: ClipboardEvent) => {
-      const clipboardData = e.clipboardData || (window as any).clipboardData;
-      if (!clipboardData) return;
-      
-      const itemsData = clipboardData.items;
-      
-      for (let i = 0; i < itemsData.length; i++) {
-        const item = itemsData[i];
-        
-        if (item.kind === 'file') {
-          const blob = item.getAsFile();
-          if (!blob) continue;
-          
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            if (!event.target?.result) return;
-            const newItem: ItemType = {
-              id: Math.random().toString(36).substr(2, 9),
-              type: 'image',
-              content: event.target.result as string,
-              timestamp: new Date().toISOString()
-            };
-            setItems(prev => [newItem, ...prev]);
-            socket.emit('send-item', { sessionId, item: newItem });
-          }; 
-          reader.readAsDataURL(blob);
-          
-        } else if (item.type === 'text/plain') {
-          item.getAsString((text: string) => {
-            if (!text.trim()) return;
-            const newItem: ItemType = {
-              id: Math.random().toString(36).substr(2, 9),
-              type: 'text',
-              content: text,
-              timestamp: new Date().toISOString()
-            };
-            setItems(prev => [newItem, ...prev]);
-            socket.emit('send-item', { sessionId, item: newItem });
-          });
-        }
-      }
-    };
-
-    window.addEventListener('paste', handlePaste);
-
     return () => {
       socket.off('session-history');
       socket.off('new-item');
       socket.disconnect();
-      window.removeEventListener('paste', handlePaste);
     };
   }, [sessionId]);
+
+  const handlePaste = (e: any) => {
+    // Prevent default to avoid pasting text directly into the contenteditable div
+    if (e.target?.isContentEditable) {
+      e.preventDefault();
+    }
+    
+    const clipboardData = e.clipboardData || (window as any).clipboardData;
+    if (!clipboardData) return;
+    
+    const itemsData = clipboardData.items;
+    const socket = socketRef.current;
+    if (!socket) return;
+    
+    for (let i = 0; i < itemsData.length; i++) {
+      const item = itemsData[i];
+      
+      if (item.kind === 'file') {
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (!event.target?.result) return;
+          const newItem: ItemType = {
+            id: Math.random().toString(36).substr(2, 9),
+            type: 'image',
+            content: event.target.result as string,
+            timestamp: new Date().toISOString()
+          };
+          setItems(prev => [newItem, ...prev]);
+          socket.emit('send-item', { sessionId, item: newItem });
+        }; 
+        reader.readAsDataURL(blob);
+        
+      } else if (item.type === 'text/plain') {
+        item.getAsString((text: string) => {
+          if (!text.trim()) return;
+          const newItem: ItemType = {
+            id: Math.random().toString(36).substr(2, 9),
+            type: 'text',
+            content: text,
+            timestamp: new Date().toISOString()
+          };
+          setItems(prev => [newItem, ...prev]);
+          socket.emit('send-item', { sessionId, item: newItem });
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+
 
   const copySessionId = () => {
     navigator.clipboard.writeText(sessionId);
@@ -120,17 +133,34 @@ export default function Session({ params }: { params: { sessionId: string } }) {
         </div>
       </header>
 
-      <main className="flex-1 p-8 max-w-6xl mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col">
+        
+        {/* Mobile/Desktop Paste Area */}
+        <div className="mb-8 relative group">
+          <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
+          <div 
+            className="relative glass-panel rounded-2xl p-6 text-center border border-accent/30 flex flex-col items-center justify-center min-h-[120px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent"
+            contentEditable
+            suppressContentEditableWarning
+            onPaste={handlePaste}
+          >
+            <div className="pointer-events-none flex flex-col items-center opacity-70">
+              <span className="text-xl md:text-2xl font-semibold text-white mb-2">Tap here & Paste</span>
+              <span className="text-sm text-gray-400">Supports text and images from clipboard</span>
+            </div>
+          </div>
+        </div>
+
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-center text-gray-400">
+          <div className="flex flex-col items-center justify-center flex-1 text-center text-gray-400 min-h-[40vh]">
             <div className="w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/30 mb-6 relative animate-pulse-glow">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-accent rounded-full shadow-[0_0_20px_var(--tw-colors-accent)]"></div>
             </div>
             <h3 className="text-white text-2xl mb-2">Waiting for clipboard items...</h3>
-            <p>Press Ctrl+V (or Cmd+V) anywhere on this page to share text or images.</p>
+            <p className="max-w-md">Press <kbd className="bg-white/10 px-2 py-1 rounded text-white text-sm mx-1">Ctrl+V</kbd> anywhere, or tap the Paste area above.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {items.map(item => (
               <ClipboardItem key={item.id} item={item} />
             ))}
@@ -139,8 +169,8 @@ export default function Session({ params }: { params: { sessionId: string } }) {
       </main>
       
       {/* Background glow effects */}
-      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.4)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float"></div>
-      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(236,72,153,0.3)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float" style={{ animationDelay: '-5s' }}></div>
+      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.4)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none"></div>
+      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(236,72,153,0.3)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
     </div>
   );
 }
