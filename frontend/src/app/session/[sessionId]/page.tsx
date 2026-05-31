@@ -1,0 +1,146 @@
+'use client';
+
+import React, { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
+import { ArrowLeft, Copy, ShieldCheck } from 'lucide-react';
+import ClipboardItem from '@/components/ClipboardItem';
+
+interface ItemType {
+  id: string;
+  type: 'text' | 'image';
+  content: string;
+  timestamp: string;
+}
+
+export default function Session({ params }: { params: { sessionId: string } }) {
+  const router = useRouter();
+  const sessionId = params.sessionId;
+  
+  const [items, setItems] = useState<ItemType[]>([]);
+  const [copiedId, setCopiedId] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = io('http://localhost:4000');
+    const socket = socketRef.current;
+
+    socket.emit('join-session', sessionId);
+
+    socket.on('session-history', (history: ItemType[]) => {
+      setItems(history);
+    });
+
+    socket.on('new-item', (item: ItemType) => {
+      setItems(prev => [item, ...prev]);
+    });
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const clipboardData = e.clipboardData || (window as any).clipboardData;
+      if (!clipboardData) return;
+      
+      const itemsData = clipboardData.items;
+      
+      for (let i = 0; i < itemsData.length; i++) {
+        const item = itemsData[i];
+        
+        if (item.kind === 'file') {
+          const blob = item.getAsFile();
+          if (!blob) continue;
+          
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (!event.target?.result) return;
+            const newItem: ItemType = {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'image',
+              content: event.target.result as string,
+              timestamp: new Date().toISOString()
+            };
+            setItems(prev => [newItem, ...prev]);
+            socket.emit('send-item', { sessionId, item: newItem });
+          }; 
+          reader.readAsDataURL(blob);
+          
+        } else if (item.type === 'text/plain') {
+          item.getAsString((text: string) => {
+            if (!text.trim()) return;
+            const newItem: ItemType = {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'text',
+              content: text,
+              timestamp: new Date().toISOString()
+            };
+            setItems(prev => [newItem, ...prev]);
+            socket.emit('send-item', { sessionId, item: newItem });
+          });
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+
+    return () => {
+      socket.off('session-history');
+      socket.off('new-item');
+      socket.disconnect();
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [sessionId]);
+
+  const copySessionId = () => {
+    navigator.clipboard.writeText(sessionId);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col relative">
+      <header className="glass-panel flex items-center justify-between px-6 py-4 sticky top-0 z-10 border-x-0 border-t-0 rounded-none">
+        <button 
+          className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center" 
+          onClick={() => router.push('/')}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        
+        <div 
+          className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5" 
+          onClick={copySessionId}
+        >
+          <span className="text-gray-400 text-sm">Session ID</span>
+          <div className="bg-accent/15 border border-accent/30 text-indigo-300 px-3 py-1 rounded-full font-mono text-lg tracking-wide flex items-center">
+            {sessionId}
+            {copiedId ? (
+              <ShieldCheck className="w-4 h-4 text-green-400 ml-2" />
+            ) : (
+              <Copy className="w-4 h-4 ml-2 opacity-50" />
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 p-8 max-w-6xl mx-auto w-full">
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-center text-gray-400">
+            <div className="w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/30 mb-6 relative animate-pulse-glow">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-accent rounded-full shadow-[0_0_20px_var(--tw-colors-accent)]"></div>
+            </div>
+            <h3 className="text-white text-2xl mb-2">Waiting for clipboard items...</h3>
+            <p>Press Ctrl+V (or Cmd+V) anywhere on this page to share text or images.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map(item => (
+              <ClipboardItem key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </main>
+      
+      {/* Background glow effects */}
+      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.4)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float"></div>
+      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(236,72,153,0.3)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float" style={{ animationDelay: '-5s' }}></div>
+    </div>
+  );
+}
