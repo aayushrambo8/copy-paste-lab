@@ -165,7 +165,6 @@ export default function Session({ params }: { params: { sessionId: string } }) {
                 className="relative glass-panel rounded-2xl p-3 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[60px] md:min-h-[100px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md"
                 contentEditable
                 suppressContentEditableWarning
-                onPaste={handlePaste}
               >
                 <div className="pointer-events-none flex flex-col items-center opacity-80">
                   <span className="text-base md:text-xl font-bold text-white tracking-wide">Tap here & Paste</span>
