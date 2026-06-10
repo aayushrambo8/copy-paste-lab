@@ -16,7 +16,7 @@ interface ItemType {
 export default function Session({ params }: { params: { sessionId: string } }) {
   const router = useRouter();
   const sessionId = params.sessionId;
-  
+
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const socketRef = useRef<Socket | null>(null);
@@ -50,21 +50,21 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     if (e.target?.isContentEditable) {
       e.preventDefault();
     }
-    
+
     const clipboardData = e.clipboardData || (window as any).clipboardData;
     if (!clipboardData) return;
-    
+
     const itemsData = clipboardData.items;
     const socket = socketRef.current;
     if (!socket) return;
-    
+
     for (let i = 0; i < itemsData.length; i++) {
       const item = itemsData[i];
-      
+
       if (item.kind === 'file') {
         const blob = item.getAsFile();
         if (!blob) continue;
-        
+
         const reader = new FileReader();
         reader.onload = (event) => {
           if (!event.target?.result) return;
@@ -76,9 +76,9 @@ export default function Session({ params }: { params: { sessionId: string } }) {
           };
           setItems(prev => [newItem, ...prev]);
           socket.emit('send-item', { sessionId, item: newItem });
-        }; 
+        };
         reader.readAsDataURL(blob);
-        
+
       } else if (item.type === 'text/plain') {
         item.getAsString((text: string) => {
           if (!text.trim()) return;
@@ -113,15 +113,15 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   return (
     <div className="min-h-screen flex flex-col relative">
       <header className="glass-panel flex items-center justify-between px-6 py-4 sticky top-0 z-10 border-x-0 border-t-0 rounded-none">
-        <button 
-          className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center" 
+        <button
+          className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center"
           onClick={() => router.push('/')}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        
-        <div 
-          className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5" 
+
+        <div
+          className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
           onClick={copySessionId}
         >
           <span className="text-gray-400 text-sm">Session ID</span>
@@ -137,12 +137,12 @@ export default function Session({ params }: { params: { sessionId: string } }) {
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col">
-        
+
         {/* Mobile/Desktop Paste Area - Fixed to bottom */}
         <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-20 pointer-events-none">
           <div className="max-w-4xl mx-auto relative group pointer-events-auto">
             <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
-            <div 
+            <div
               className="relative glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[80px] md:min-h-[100px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md"
               contentEditable
               suppressContentEditableWarning
@@ -172,7 +172,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
           </div>
         )}
       </main>
-      
+
       {/* Background glow effects */}
       <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.4)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none"></div>
       <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(236,72,153,0.3)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
