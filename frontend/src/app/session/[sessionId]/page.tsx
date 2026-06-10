@@ -95,6 +95,24 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     }
   };
 
+  const handlePasteButtonClick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) return;
+      const newItem: ItemType = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: 'text',
+        content: text,
+        timestamp: new Date().toISOString()
+      };
+      setItems(prev => [newItem, ...prev]);
+      socketRef.current?.emit('send-item', { sessionId, item: newItem });
+    } catch (err) {
+      console.error('Failed to read clipboard text:', err);
+      alert("Browser blocked direct access. Please tap the box and use your device's paste option.");
+    }
+  };
+
   useEffect(() => {
     window.addEventListener('paste', handlePaste);
     return () => {
@@ -139,20 +157,31 @@ export default function Session({ params }: { params: { sessionId: string } }) {
       <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col">
 
         {/* Mobile/Desktop Paste Area - Fixed to bottom */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-20 pointer-events-none">
-          <div className="max-w-4xl mx-auto relative group pointer-events-auto">
-            <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
-            <div
-              className="relative glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[80px] md:min-h-[100px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md"
-              contentEditable
-              suppressContentEditableWarning
-              onPaste={handlePaste}
-            >
-              <div className="pointer-events-none flex flex-col items-center opacity-80">
-                <span className="text-lg md:text-xl font-bold text-white tracking-wide">Tap here & Paste</span>
-                <span className="text-xs md:text-sm text-gray-400 mt-1">Accepts text & images</span>
+        <div className="fixed bottom-0 left-0 right-0 p-3 md:p-6 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-20 pointer-events-none">
+          <div className="max-w-4xl mx-auto relative group pointer-events-auto flex flex-col gap-2 md:block">
+            <div className="relative">
+              <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100"></div>
+              <div 
+                className="relative glass-panel rounded-2xl p-3 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[60px] md:min-h-[100px] cursor-text transition-all hover:border-accent/60 outline-none focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md"
+                contentEditable
+                suppressContentEditableWarning
+                onPaste={handlePaste}
+              >
+                <div className="pointer-events-none flex flex-col items-center opacity-80">
+                  <span className="text-base md:text-xl font-bold text-white tracking-wide">Tap here & Paste</span>
+                  <span className="text-[10px] md:text-sm text-gray-400 mt-1">Accepts images & text</span>
+                </div>
               </div>
             </div>
+
+            {/* Direct Paste Button for Mobile */}
+            <button 
+              onClick={handlePasteButtonClick}
+              className="md:hidden w-full bg-accent/80 backdrop-blur text-white font-semibold py-3 rounded-xl border border-accent shadow-[0_0_15px_rgba(99,102,241,0.2)] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            >
+              <Copy className="w-4 h-4" />
+              Paste Text Directly
+            </button>
           </div>
         </div>
 

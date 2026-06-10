@@ -36,7 +36,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
 
   return (
     <div 
-      className="glass-panel group rounded-2xl overflow-hidden flex flex-col relative transition-all duration-200 cursor-pointer animate-[fadeIn_0.4s_ease-out_forwards] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] hover:border-accent/30"
+      className="glass-panel group rounded-2xl overflow-hidden flex flex-col relative transition-all duration-200 cursor-pointer animate-[fadeIn_0.4s_ease-out_forwards] md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] md:hover:border-accent/30 active:scale-[0.98]"
       onClick={handleCopy}
     >
       <div className="flex justify-between items-center px-4 py-3 bg-black/20 border-b border-glass-border">
@@ -44,7 +44,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           {item.type === 'text' ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
           <span>{timeString}</span>
         </div>
-        <button className="bg-transparent border-none text-gray-400 transition-colors group-hover:text-white">
+        <button className="bg-transparent border-none text-gray-400 transition-colors md:group-hover:text-white p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5">
           {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
@@ -65,9 +65,15 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         )}
       </div>
       
-      <div className="absolute inset-0 bg-accent/80 flex items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
+      <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
         <span className="font-semibold text-lg tracking-wide text-white transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
           Click to Copy
+        </span>
+      </div>
+
+      <div className="md:hidden bg-black/40 py-2 text-center border-t border-glass-border/50">
+        <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
+          {copied ? 'Copied!' : 'Tap to Copy'}
         </span>
       </div>
     </div>

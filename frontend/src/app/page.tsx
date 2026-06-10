@@ -23,22 +23,22 @@ export default function Landing() {
   };
 
   return (
-    <div className="relative flex justify-center items-center min-h-screen p-5">
-      <div className="glass-panel p-12 text-center max-w-lg w-full rounded-3xl animate-[slideUp_0.6s_cubic-bezier(0.16,1,0.3,1)] z-10">
-        <div className="inline-flex p-5 rounded-2xl bg-accent/10 border border-accent/20 mb-6">
-          <Zap className="text-accent w-12 h-12" />
+    <div className="relative flex justify-center items-center min-h-screen p-4 md:p-5">
+      <div className="glass-panel p-6 md:p-12 text-center max-w-lg w-full rounded-3xl animate-[slideUp_0.6s_cubic-bezier(0.16,1,0.3,1)] z-10">
+        <div className="inline-flex p-4 md:p-5 rounded-2xl bg-accent/10 border border-accent/20 mb-6">
+          <Zap className="text-accent w-10 h-10 md:w-12 md:h-12" />
         </div>
-        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-br from-white to-indigo-300 bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-br from-white to-indigo-300 bg-clip-text text-transparent">
           Copy-Paste Lab
         </h1>
-        <p className="text-gray-400 text-lg mb-10 leading-relaxed">
+        <p className="text-gray-400 text-base md:text-lg mb-8 md:mb-10 leading-relaxed">
           Seamlessly sync your clipboard across devices in real-time.
         </p>
         
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 md:gap-5">
           <button 
             onClick={handleCreate}
-            className="flex items-center justify-center gap-2 w-full p-4 rounded-xl font-medium bg-accent text-white shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-[0_4px_25px_rgba(99,102,241,0.4)] transition-all"
+            className="flex items-center justify-center gap-2 w-full p-4 rounded-xl font-medium bg-accent text-white shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:bg-accent-hover active:scale-[0.98] transition-all"
           >
             <Copy className="w-5 h-5" />
             <span>Create New Session</span>
@@ -50,13 +50,13 @@ export default function Landing() {
             <div className="flex-1 border-b border-glass-border"></div>
           </div>
 
-          <form onSubmit={handleJoin} className="flex gap-3">
+          <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-3">
             <input 
               type="text" 
-              placeholder="Enter 8-digit Session ID" 
+              placeholder="Enter 8-digit ID" 
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
-              className="flex-1 bg-black/20 border border-glass-border rounded-xl px-4 text-white text-lg outline-none transition-colors text-center tracking-widest focus:border-accent"
+              className="flex-1 bg-black/20 border border-glass-border rounded-xl px-4 py-3 sm:py-0 text-white text-base md:text-lg outline-none transition-colors text-center tracking-widest focus:border-accent"
               maxLength={8}
             />
             <button 
