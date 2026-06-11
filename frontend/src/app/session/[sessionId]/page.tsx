@@ -20,6 +20,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
 
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,13 +155,10 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check size limit: 10MB
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File is too large! Maximum size is 10 MB to protect the server's memory.");
+  const processFile = (file: File) => {
+    // Check size limit: 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large! Maximum size is 5 MB.");
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -182,6 +180,29 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     reader.readAsDataURL(file);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
   useEffect(() => {
     window.addEventListener('paste', handlePaste);
     return () => {
@@ -198,7 +219,22 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div 
+      className="min-h-screen flex flex-col relative"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag & Drop Overlay */}
+      {isDragging && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center border-4 border-accent border-dashed m-4 rounded-3xl">
+          <div className="flex flex-col items-center pointer-events-none text-accent">
+            <Paperclip className="w-20 h-20 mb-4 animate-bounce" />
+            <h2 className="text-3xl font-bold text-white tracking-widest">DROP FILE TO SHARE</h2>
+          </div>
+        </div>
+      )}
+
       <header className="glass-panel flex items-center justify-between px-6 py-4 sticky top-0 z-10 border-x-0 border-t-0 rounded-none">
         <button
           className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center"

@@ -16,7 +16,7 @@ const io = new Server(server, {
     origin: '*',
     methods: ['GET', 'POST']
   },
-  maxHttpBufferSize: 1e7 // 10 MB limit
+  maxHttpBufferSize: 5e6 // 5 MB limit
 });
 
 interface ClipboardItem {
