@@ -22,7 +22,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         const response = await fetch(item.content);
         const blob = await response.blob();
         await navigator.clipboard.write([
-          new ClipboardItem({ [blob.type]: blob })
+          new window.ClipboardItem({ [blob.type]: blob })
         ]);
       } else if (item.type === 'file') {
         const link = document.createElement('a');
@@ -60,7 +60,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
   const timeString = new Date(item.timestamp).toLocaleTimeString();
 
   return (
-    <div 
+    <div
       className="glass-panel group rounded-2xl overflow-hidden flex flex-col relative transition-all duration-200 cursor-pointer animate-[fadeIn_0.4s_ease-out_forwards] md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] md:hover:border-accent/30 active:scale-[0.98]"
       onClick={handleCopy}
     >
@@ -72,14 +72,14 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         <div className="flex items-center gap-1">
           {item.type === 'image' ? (
             <>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                 className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5"
                 title="Copy Image"
               >
                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
               </button>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); handleDownload(); }}
                 className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5"
                 title="Download Image"
@@ -88,7 +88,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
               </button>
             </>
           ) : (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); handleCopy(); }}
               className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5"
             >
@@ -97,7 +97,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           )}
         </div>
       </div>
-      
+
       <div className="p-5 max-h-[250px] overflow-hidden relative bg-black/10 flex-1">
         {item.type === 'text' ? (
           <p className="font-mono text-[0.95rem] leading-relaxed whitespace-pre-wrap break-words">
@@ -105,8 +105,8 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           </p>
         ) : item.type === 'image' ? (
           <div className="relative w-full h-full min-h-[150px]">
-             {/* Note: In a real app we'd use Next Image, but since these are data URIs from clipboard, an img tag is easier to handle safely. */}
-             <img src={item.content} alt="Pasted" className="w-full h-full object-cover rounded-lg" />
+            {/* Note: In a real app we'd use Next Image, but since these are data URIs from clipboard, an img tag is easier to handle safely. */}
+            <img src={item.content} alt="Pasted" className="w-full h-full object-cover rounded-lg" />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[150px] opacity-80">
@@ -115,20 +115,20 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           </div>
         )}
         {item.type === 'text' && (
-           <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#101012] to-transparent pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#101012] to-transparent pointer-events-none"></div>
         )}
       </div>
-      
+
       {item.type === 'image' ? (
         <div className="hidden md:flex absolute inset-0 bg-black/70 items-center justify-center gap-4 opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); handleCopy(); }}
             className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-accent text-white hover:bg-accent-hover active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 shadow-lg"
           >
             {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
             <span>{copied ? 'Copied!' : 'Copy Image'}</span>
           </button>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); handleDownload(); }}
             className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white/10 border border-white/20 text-white hover:bg-white/20 active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 delay-75 shadow-lg"
           >
