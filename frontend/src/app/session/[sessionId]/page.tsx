@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { io, Socket } from 'socket.io-client';
+import { ref, onChildAdded, onDisconnect, set } from 'firebase/database';
+import { database } from '@/lib/firebase';
 import { ArrowLeft, Copy, ShieldCheck, Paperclip } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 
@@ -21,30 +22,29 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Ensure window is defined before accessing hostname
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || `http://${hostname}:4000`;
-    socketRef.current = io(socketUrl);
-    const socket = socketRef.current;
+    const itemsRef = ref(database, `sessions/${sessionId}/items`);
+    const rootSessionRef = ref(database, `sessions/${sessionId}`);
 
-    socket.emit('join-session', sessionId);
+    // Ephemeral logic: Burn the session if a client disconnects
+    onDisconnect(rootSessionRef).remove();
 
-    socket.on('session-history', (history: ItemType[]) => {
-      setItems(history);
-    });
-
-    socket.on('new-item', (item: ItemType) => {
-      setItems(prev => [item, ...prev]);
+    const unsubscribe = onChildAdded(itemsRef, (snapshot) => {
+      const item = snapshot.val() as ItemType;
+      setItems(prev => {
+        // Prevent duplicates
+        if (prev.some(i => i.id === item.id)) return prev;
+        return [item, ...prev];
+      });
     });
 
     return () => {
-      socket.off('session-history');
-      socket.off('new-item');
-      socket.disconnect();
+      unsubscribe();
+      // Clean up manually if they leave the page
+      set(rootSessionRef, null).catch(() => {});
     };
   }, [sessionId]);
 
@@ -58,8 +58,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     if (!clipboardData) return;
 
     const itemsData = clipboardData.items;
-    const socket = socketRef.current;
-    if (!socket) return;
+    const itemsData = clipboardData.items;
 
     for (let i = 0; i < itemsData.length; i++) {
       const item = itemsData[i];
@@ -78,7 +77,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
             timestamp: new Date().toISOString()
           };
           setItems(prev => [newItem, ...prev]);
-          socket.emit('send-item', { sessionId, item: newItem });
+          set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
         };
         reader.readAsDataURL(blob);
 
@@ -92,7 +91,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
             timestamp: new Date().toISOString()
           };
           setItems(prev => [newItem, ...prev]);
-          socket.emit('send-item', { sessionId, item: newItem });
+          set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
         });
       }
     }
@@ -116,7 +115,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
                 timestamp: new Date().toISOString()
               };
               setItems(prev => [newItem, ...prev]);
-              socketRef.current?.emit('send-item', { sessionId, item: newItem });
+              set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
             };
             reader.readAsDataURL(blob);
             return;
@@ -133,7 +132,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
               timestamp: new Date().toISOString()
             };
             setItems(prev => [newItem, ...prev]);
-            socketRef.current?.emit('send-item', { sessionId, item: newItem });
+            set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
             return;
           }
         }
@@ -147,7 +146,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
           timestamp: new Date().toISOString()
         };
         setItems(prev => [newItem, ...prev]);
-        socketRef.current?.emit('send-item', { sessionId, item: newItem });
+        set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err);
@@ -174,7 +173,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
         fileName: file.name
       };
       setItems(prev => [newItem, ...prev]);
-      socketRef.current?.emit('send-item', { sessionId, item: newItem });
+      set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsDataURL(file);
