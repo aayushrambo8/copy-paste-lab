@@ -9,15 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a0c',
+        background: '#090412', // Deep vibrant dark violet
         foreground: '#ffffff',
         accent: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5',
+          DEFAULT: '#d946ef', // Neon Fuchsia
+          hover: '#c026d3',
         },
         glass: {
-          DEFAULT: 'rgba(255, 255, 255, 0.03)',
-          border: 'rgba(255, 255, 255, 0.08)',
+          DEFAULT: 'rgba(255, 255, 255, 0.08)', // Brighter glass
+          border: 'rgba(255, 255, 255, 0.15)', // More visible border
         }
       },
       fontFamily: {

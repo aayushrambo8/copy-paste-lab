@@ -232,8 +232,8 @@ export default function Session({ params }: { params: { sessionId: string } }) {
       </main>
 
       {/* Background glow effects */}
-      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(99,102,241,0.4)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none"></div>
-      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(236,72,153,0.3)_0%,transparent_70%)] rounded-full blur-[120px] opacity-50 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
+      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(6,182,212,0.6)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none"></div>
+      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(217,70,239,0.6)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
     </div>
   );
 }
