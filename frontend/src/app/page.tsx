@@ -19,7 +19,7 @@ export default function Landing() {
 
   const handleCreate = () => {
     const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
-    router.push(`/session/${randomId}`);
+    router.push(`/session/${randomId}?create=true`);
   };
 
   return (

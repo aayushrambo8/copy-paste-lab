@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { ref, onChildAdded, onDisconnect, set } from 'firebase/database';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ref, onChildAdded, onDisconnect, set, get } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { ArrowLeft, Copy, ShieldCheck, Paperclip } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
@@ -17,35 +17,107 @@ interface ItemType {
 
 export default function Session({ params }: { params: { sessionId: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sessionId = params.sessionId;
+  const isCreator = searchParams.get('create') === 'true';
 
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [sessionState, setSessionState] = useState<'checking' | 'active' | 'inactive'>('checking');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isValid = /^\d{8}$/.test(sessionId);
+
   useEffect(() => {
+    if (!isValid) {
+      router.replace('/');
+      return;
+    }
+
+    const sessionRef = ref(database, `sessions/${sessionId}`);
     const itemsRef = ref(database, `sessions/${sessionId}/items`);
-    const rootSessionRef = ref(database, `sessions/${sessionId}`);
 
-    // Ephemeral logic: Burn the session if a client disconnects
-    onDisconnect(rootSessionRef).remove();
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = onChildAdded(itemsRef, (snapshot) => {
-      const item = snapshot.val() as ItemType;
-      setItems(prev => {
-        // Prevent duplicates
-        if (prev.some(i => i.id === item.id)) return prev;
-        return [item, ...prev];
-      });
-    });
+    const setupSession = async () => {
+      try {
+        if (isCreator) {
+          // Initialize session as active
+          await set(ref(database, `sessions/${sessionId}/active`), true);
+          setSessionState('active');
+        } else {
+          // Check if session is active
+          const snapshot = await get(ref(database, `sessions/${sessionId}/active`));
+          if (snapshot.exists() && snapshot.val() === true) {
+            setSessionState('active');
+          } else {
+            setSessionState('inactive');
+            return;
+          }
+        }
+
+        // Ephemeral logic: Burn the session if a client disconnects
+        onDisconnect(sessionRef).remove();
+
+        unsubscribe = onChildAdded(itemsRef, (snapshot) => {
+          const item = snapshot.val() as ItemType;
+          setItems(prev => {
+            // Prevent duplicates
+            if (prev.some(i => i.id === item.id)) return prev;
+            return [item, ...prev];
+          });
+        });
+      } catch (err) {
+        console.error('Failed to verify session: ', err);
+        setSessionState('inactive');
+      }
+    };
+
+    setupSession();
 
     return () => {
-      unsubscribe();
-      // Clean up manually if they leave the page
-      set(rootSessionRef, null).catch(() => {});
+      if (unsubscribe) unsubscribe();
+      // Only the creator should clean up the entire session on manual unmount
+      if (isCreator) {
+        set(sessionRef, null).catch(() => {});
+      }
     };
-  }, [sessionId]);
+  }, [sessionId, isValid, router, isCreator]);
+
+  if (!isValid) {
+    return null;
+  }
+
+  if (sessionState === 'checking') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0d0d11] text-white">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="font-mono text-gray-400">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionState === 'inactive') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0d0d11] text-white p-4">
+        <div className="glass-panel p-8 text-center max-w-md w-full rounded-3xl border border-red-500/30">
+          <h2 className="text-2xl font-bold mb-4 text-red-400">Invalid or Inactive Session</h2>
+          <p className="text-gray-400 mb-6 font-mono text-sm leading-relaxed">
+            This session ID is not active or has already expired. Sessions are completely ephemeral and disappear when all devices disconnect.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full p-4 rounded-xl font-medium bg-accent text-white hover:bg-accent-hover active:scale-[0.98] transition-all"
+          >
+            Go Back Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handlePaste = (e: any) => {
     // Prevent default to avoid pasting text directly into the contenteditable div
