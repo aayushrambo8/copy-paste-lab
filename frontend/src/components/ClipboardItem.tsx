@@ -40,6 +40,24 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
     }
   };
 
+  const handleDownload = () => {
+    try {
+      const link = document.createElement('a');
+      link.href = item.content;
+      let extension = 'png';
+      const match = item.content.match(/^data:image\/(\w+);base64,/);
+      if (match) {
+        extension = match[1];
+      }
+      link.download = item.fileName || `pasted-image-${item.id}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to download image: ', err);
+    }
+  };
+
   const timeString = new Date(item.timestamp).toLocaleTimeString();
 
   return (
@@ -52,9 +70,33 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           {item.type === 'text' ? <FileText className="w-4 h-4" /> : item.type === 'image' ? <ImageIcon className="w-4 h-4" /> : <File className="w-4 h-4" />}
           <span>{timeString}</span>
         </div>
-        <button className="bg-transparent border-none text-gray-400 transition-colors md:group-hover:text-white p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5">
-          {copied ? <Check className="w-4 h-4 text-green-400" /> : item.type === 'file' ? <Download className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          {item.type === 'image' ? (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+                className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5"
+                title="Copy Image"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+                className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5"
+                title="Download Image"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+              className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-400" /> : item.type === 'file' ? <Download className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="p-5 max-h-[250px] overflow-hidden relative bg-black/10 flex-1">
@@ -78,17 +120,55 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         )}
       </div>
       
-      <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
-        <span className="font-semibold text-lg tracking-wide text-white transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
-          {item.type === 'file' ? 'Click to Download' : 'Click to Copy'}
-        </span>
-      </div>
+      {item.type === 'image' ? (
+        <div className="hidden md:flex absolute inset-0 bg-black/70 items-center justify-center gap-4 opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-accent text-white hover:bg-accent-hover active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 shadow-lg"
+          >
+            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+            <span>{copied ? 'Copied!' : 'Copy Image'}</span>
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white/10 border border-white/20 text-white hover:bg-white/20 active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 delay-75 shadow-lg"
+          >
+            <Download className="w-5 h-5" />
+            <span>Download</span>
+          </button>
+        </div>
+      ) : (
+        <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
+          <span className="font-semibold text-lg tracking-wide text-white transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
+            {item.type === 'file' ? 'Click to Download' : 'Click to Copy'}
+          </span>
+        </div>
+      )}
 
-      <div className="md:hidden bg-black/40 py-2 text-center border-t border-glass-border/50">
-        <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
-          {copied ? (item.type === 'file' ? 'Downloaded!' : 'Copied!') : (item.type === 'file' ? 'Tap to Download' : 'Tap to Copy')}
-        </span>
-      </div>
+      {item.type === 'image' ? (
+        <div className="md:hidden flex border-t border-glass-border/50 divide-x divide-glass-border/50">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+            className="flex-1 bg-black/40 py-3 text-center text-xs text-gray-300 font-bold uppercase hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
+          >
+            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+            className="flex-1 bg-black/40 py-3 text-center text-xs text-gray-300 font-bold uppercase hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download</span>
+          </button>
+        </div>
+      ) : (
+        <div className="md:hidden bg-black/40 py-2 text-center border-t border-glass-border/50">
+          <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
+            {copied ? (item.type === 'file' ? 'Downloaded!' : 'Copied!') : (item.type === 'file' ? 'Tap to Download' : 'Tap to Copy')}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
