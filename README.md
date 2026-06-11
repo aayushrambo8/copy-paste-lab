@@ -1,56 +1,37 @@
 # Copy-Paste Lab
 
-Copy-Paste Lab is a real-time clipboard synchronization application that allows you to easily share text and images across different devices seamlessly. Simply create a session, share your 8-digit session ID, and any text or images copied to your clipboard can be instantly pasted and viewed by anyone in the session.
+![Supports Images & Files](https://img.shields.io/badge/Supports-Images%20%26%20Files-d946ef?style=flat-square&logo=react)
+![Real-time](https://img.shields.io/badge/Real--time-WebSocket-06b6d4?style=flat-square)
 
-## Features
+**Copy-Paste Lab** is a real-time, completely ephemeral clipboard syncing tool designed to seamlessly bridge your devices without the hassle of logging in or using messaging apps like WhatsApp. 
 
-- **Real-Time Sync**: Instant synchronization of your clipboard content across devices using WebSockets.
-- **Support for Text & Images**: Paste both plain text and images directly from your clipboard.
-- **Session-Based Privacy**: Secure and private rooms using unique 8-digit session IDs.
-- **Modern UI**: A beautiful, responsive, and glassmorphism-inspired interface.
+Whether you need to quickly beam a screenshot from your PC to your phone, or send a PDF to your tablet, Copy-Paste Lab handles it instantly.
 
-## Tech Stack
+## ✨ Features
 
-- **Frontend**: Next.js 14, React, Tailwind CSS, TypeScript
-- **Backend**: Node.js, Express, Socket.io, TypeScript
+- **⚡ Real-Time Syncing:** Instantly share content across as many devices as you want using a secure 8-digit session ID.
+- **📝 Text & Links:** Copy text on one device and paste it directly onto another in milliseconds.
+- **🖼️ Images & Screenshots:** Supports native pasting of images. Just take a screenshot and press `Ctrl+V` (or use the native paste button on mobile).
+- **📄 File Transfers (up to 5MB):** Need to transfer a PDF or document quickly? Upload or drag-and-drop any file up to 5MB to instantly share it across your session.
+- **🖱️ Drag and Drop:** Seamlessly drag and drop files directly onto the browser window from your PC.
+- **📱 Touch-Optimized for Mobile:** Designed with a massive "Tap to Paste" button that uses native browser APIs to avoid annoying virtual keyboard popups. 
+- **🛡️ 100% Ephemeral & Secure:** All shared data is stored purely in temporary RAM. As soon as the session closes, your data vanishes into the void. Nothing is ever saved to a database.
 
-## Getting Started
+## 🚀 How to Use
 
-### Prerequisites
+It takes less than 5 seconds to connect your devices:
 
-Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
+1. **Create a Session:** Visit the site on your primary device and click "Create New Session".
+2. **Connect a Second Device:** Open the site on your phone, tablet, or another PC.
+3. **Enter the ID:** Type the 8-digit Session ID into the second device.
+4. **Start Sharing!** You're connected! Any text, image, or file you paste or drop into one device will instantly appear on all others.
 
-### Installation
+## 🎨 Design
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/aayushrambo8/copy-paste-lab.git
-   cd copy-paste-lab
-   ```
+The UI features a stunning, custom-built Cyberpunk/Synthwave aesthetic with:
+- Deep vibrant violet backgrounds
+- Neon fuchsia accents
+- Electric cyan floating glow animations
+- Smooth glassmorphism panels
 
-2. Install all dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the App Locally
-
-To start both the frontend and backend development servers concurrently, simply run:
-
-```bash
-npm run dev
-```
-
-- The **frontend** will be available at `http://localhost:3000`
-- The **backend** will be running on `http://localhost:4000`
-
-### Usage
-
-1. Open the application in your browser.
-2. Join an existing session by entering a Session ID or create a new one.
-3. Once in a session, simply use your keyboard shortcut (`Ctrl+V` or `Cmd+V`) to paste your clipboard contents into the app.
-4. Your content will be instantly shared with anyone else connected to the same session ID!
-
-## License
-
-This project is licensed under the MIT License.
+Enjoy the fastest way to move data between your screens!
