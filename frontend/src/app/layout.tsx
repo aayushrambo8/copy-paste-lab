@@ -8,7 +8,7 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'Copy-Paste Lab',
+  title: 'Paste Labs',
   description: 'Seamlessly sync your clipboard across devices in real-time.',
 }
 
