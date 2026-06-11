@@ -7,17 +7,17 @@
 
 Whether you need to quickly beam a screenshot from your PC to your phone, or send a PDF to your tablet, Copy-Paste Lab handles it instantly.
 
-## ✨ Features
+## Features
 
-- **⚡ Real-Time Syncing:** Instantly share content across as many devices as you want using a secure 8-digit session ID.
-- **📝 Text & Links:** Copy text on one device and paste it directly onto another in milliseconds.
-- **🖼️ Images & Screenshots:** Supports native pasting of images. Just take a screenshot and press `Ctrl+V` (or use the native paste button on mobile).
-- **📄 File Transfers (up to 5MB):** Need to transfer a PDF or document quickly? Upload or drag-and-drop any file up to 5MB to instantly share it across your session.
-- **🖱️ Drag and Drop:** Seamlessly drag and drop files directly onto the browser window from your PC.
-- **📱 Touch-Optimized for Mobile:** Designed with a massive "Tap to Paste" button that uses native browser APIs to avoid annoying virtual keyboard popups. 
-- **🛡️ 100% Ephemeral & Secure:** All shared data is stored purely in temporary RAM. As soon as the session closes, your data vanishes into the void. Nothing is ever saved to a database.
+- **Real-Time Syncing:** Instantly share content across as many devices as you want using a secure 8-digit session ID.
+- **Text & Links:** Copy text on one device and paste it directly onto another in milliseconds.
+- **Images & Screenshots:** Supports native pasting of images. Just take a screenshot and press `Ctrl+V` (or use the native paste button on mobile).
+- **File Transfers (up to 5MB):** Need to transfer a PDF or document quickly? Upload or drag-and-drop any file up to 5MB to instantly share it across your session.
+- **Drag and Drop:** Seamlessly drag and drop files directly onto the browser window from your PC.
+- **Touch-Optimized for Mobile:** Designed with a massive "Tap to Paste" button that uses native browser APIs to avoid annoying virtual keyboard popups. 
+- **100% Ephemeral & Secure:** All shared data is stored purely in temporary RAM. As soon as the session closes, your data vanishes into the void. Nothing is ever saved to a database.
 
-## 🚀 How to Use
+## How to Use
 
 It takes less than 5 seconds to connect your devices:
 
@@ -26,7 +26,7 @@ It takes less than 5 seconds to connect your devices:
 3. **Enter the ID:** Type the 8-digit Session ID into the second device.
 4. **Start Sharing!** You're connected! Any text, image, or file you paste or drop into one device will instantly appear on all others.
 
-## 🎨 Design
+## Design
 
 The UI features a stunning, custom-built Cyberpunk/Synthwave aesthetic with:
 - Deep vibrant violet backgrounds
