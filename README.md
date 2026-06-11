@@ -15,7 +15,7 @@ Whether you need to quickly beam a screenshot from your PC to your phone, or sen
 - **File Transfers (up to 5MB):** Need to transfer a PDF or document quickly? Upload or drag-and-drop any file up to 5MB to instantly share it across your session.
 - **Drag and Drop:** Seamlessly drag and drop files directly onto the browser window from your PC.
 - **Touch-Optimized for Mobile:** Designed with a massive "Tap to Paste" button that uses native browser APIs to avoid annoying virtual keyboard popups. 
-- **100% Ephemeral & Secure:** All shared data is stored purely in temporary RAM. As soon as the session closes, your data vanishes into the void. Nothing is ever saved to a database.
+- **100% Ephemeral & Secure:** All shared data is stored purely in temporary RAM. As soon as the session closes, your data vanishes into the void. Nothing is ever saved to a database. "There is no database to begin with."
 
 ## How to Use
 
