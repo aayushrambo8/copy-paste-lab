@@ -22,7 +22,6 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -57,7 +56,6 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     const clipboardData = e.clipboardData || (window as any).clipboardData;
     if (!clipboardData) return;
 
-    const itemsData = clipboardData.items;
     const itemsData = clipboardData.items;
 
     for (let i = 0; i < itemsData.length; i++) {
