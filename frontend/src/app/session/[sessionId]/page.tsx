@@ -3,14 +3,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
-import { ArrowLeft, Copy, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Copy, ShieldCheck, Paperclip } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 
 interface ItemType {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'file';
   content: string;
   timestamp: string;
+  fileName?: string;
 }
 
 export default function Session({ params }: { params: { sessionId: string } }) {
@@ -20,6 +21,7 @@ export default function Session({ params }: { params: { sessionId: string } }) {
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Ensure window is defined before accessing hostname
@@ -152,6 +154,34 @@ export default function Session({ params }: { params: { sessionId: string } }) {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size limit: 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File is too large! Maximum size is 10 MB to protect the server's memory.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      const newItem: ItemType = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        content: event.target.result as string,
+        timestamp: new Date().toISOString(),
+        fileName: file.name
+      };
+      setItems(prev => [newItem, ...prev]);
+      socketRef.current?.emit('send-item', { sessionId, item: newItem });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     window.addEventListener('paste', handlePaste);
     return () => {
@@ -199,18 +229,36 @@ export default function Session({ params }: { params: { sessionId: string } }) {
         <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/80 to-transparent z-20 pointer-events-none">
           <div className="max-w-4xl mx-auto relative group pointer-events-auto">
             <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-lg transition-opacity opacity-50 group-hover:opacity-100 active:opacity-100"></div>
-            <button 
-              onClick={handlePasteButtonClick}
-              className="w-full relative glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md active:scale-[0.98] cursor-pointer"
-            >
-              <div className="flex flex-col items-center opacity-90">
-                <div className="flex items-center gap-2 text-lg md:text-xl font-bold text-white tracking-wide">
-                  <Copy className="w-5 h-5 md:w-6 md:h-6" />
-                  <span>Tap to Paste</span>
+            <div className="flex gap-3 relative">
+              <button 
+                onClick={handlePasteButtonClick}
+                className="flex-1 glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md active:scale-[0.98] cursor-pointer"
+              >
+                <div className="flex flex-col items-center opacity-90">
+                  <div className="flex items-center gap-2 text-lg md:text-xl font-bold text-white tracking-wide">
+                    <Copy className="w-5 h-5 md:w-6 md:h-6" />
+                    <span>Tap to Paste</span>
+                  </div>
+                  <span className="text-xs md:text-sm text-gray-400 mt-1">Instantly paste text or images from clipboard</span>
                 </div>
-                <span className="text-xs md:text-sm text-gray-400 mt-1">Instantly paste text or images from clipboard</span>
-              </div>
-            </button>
+              </button>
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-[70px] md:w-[90px] shrink-0 glass-panel rounded-2xl border border-accent/30 flex flex-col items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 hover:bg-white/5 active:scale-[0.95] cursor-pointer bg-black/40 backdrop-blur-md text-gray-400 hover:text-white"
+                title="Upload PDF or File"
+              >
+                <Paperclip className="w-6 h-6 md:w-7 md:h-7 mb-1" />
+                <span className="text-[10px] md:text-xs font-semibold uppercase">File</span>
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                accept=".pdf,image/*" 
+                className="hidden" 
+              />
+            </div>
           </div>
         </div>
 

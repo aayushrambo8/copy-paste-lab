@@ -15,14 +15,16 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
-  }
+  },
+  maxHttpBufferSize: 1e7 // 10 MB limit
 });
 
 interface ClipboardItem {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'file';
   content: string;
   timestamp: string;
+  fileName?: string;
 }
 
 // Ephemeral memory storage for session history

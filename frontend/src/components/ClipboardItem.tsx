@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Check, FileText, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
 import Image from 'next/image';
 
 interface ItemType {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'file';
   content: string;
   timestamp: string;
+  fileName?: string;
 }
 
 export default function ClipboardItem({ item }: { item: ItemType }) {
@@ -24,6 +25,13 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         await navigator.clipboard.write([
           new window.ClipboardItem({ [blob.type]: blob })
         ]);
+      } else if (item.type === 'file') {
+        const link = document.createElement('a');
+        link.href = item.content;
+        link.download = item.fileName || 'download';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -41,11 +49,11 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
     >
       <div className="flex justify-between items-center px-4 py-3 bg-black/20 border-b border-glass-border">
         <div className="flex items-center gap-2 text-gray-400 text-sm">
-          {item.type === 'text' ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
+          {item.type === 'text' ? <FileText className="w-4 h-4" /> : item.type === 'image' ? <ImageIcon className="w-4 h-4" /> : <File className="w-4 h-4" />}
           <span>{timeString}</span>
         </div>
         <button className="bg-transparent border-none text-gray-400 transition-colors md:group-hover:text-white p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5">
-          {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-green-400" /> : item.type === 'file' ? <Download className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
       
@@ -54,10 +62,15 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           <p className="font-mono text-[0.95rem] leading-relaxed whitespace-pre-wrap break-words">
             {item.content}
           </p>
-        ) : (
+        ) : item.type === 'image' ? (
           <div className="relative w-full h-full min-h-[150px]">
              {/* Note: In a real app we'd use Next Image, but since these are data URIs from clipboard, an img tag is easier to handle safely. */}
              <img src={item.content} alt="Pasted" className="w-full h-full object-cover rounded-lg" />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[150px] opacity-80">
+            <File className="w-16 h-16 mb-4 text-accent" />
+            <p className="font-mono text-sm text-center break-all px-4">{item.fileName || 'document.pdf'}</p>
           </div>
         )}
         {item.type === 'text' && (
@@ -67,13 +80,13 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
       
       <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
         <span className="font-semibold text-lg tracking-wide text-white transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
-          Click to Copy
+          {item.type === 'file' ? 'Click to Download' : 'Click to Copy'}
         </span>
       </div>
 
       <div className="md:hidden bg-black/40 py-2 text-center border-t border-glass-border/50">
         <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
-          {copied ? 'Copied!' : 'Tap to Copy'}
+          {copied ? (item.type === 'file' ? 'Downloaded!' : 'Copied!') : (item.type === 'file' ? 'Tap to Download' : 'Tap to Copy')}
         </span>
       </div>
     </div>

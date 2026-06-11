@@ -31,9 +31,15 @@ export default function Landing() {
         <h1 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-br from-white to-indigo-300 bg-clip-text text-transparent">
           Copy-Paste Lab
         </h1>
-        <p className="text-gray-400 text-base md:text-lg mb-8 md:mb-10 leading-relaxed">
-          Seamlessly sync your clipboard across devices in real-time.
+        <p className="text-gray-400 text-base md:text-lg mb-4 leading-relaxed">
+          Seamlessly sync your copied <span className="text-white font-medium">text and images</span> across devices in real-time.
         </p>
+        <div className="bg-black/20 border border-glass-border rounded-xl p-4 mb-8 md:mb-10 text-sm md:text-base text-gray-300 text-left relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-accent/20 text-accent text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg">Supports Images</div>
+          <p className="mb-2 mt-1"><span className="text-accent font-semibold">1.</span> Create a new session or join an existing one.</p>
+          <p className="mb-2"><span className="text-accent font-semibold">2.</span> Open this website on any other device (like your phone).</p>
+          <p><span className="text-accent font-semibold">3.</span> Enter the 8-digit Session ID to instantly share your clipboard!</p>
+        </div>
         
         <div className="flex flex-col gap-4 md:gap-5">
           <button 
