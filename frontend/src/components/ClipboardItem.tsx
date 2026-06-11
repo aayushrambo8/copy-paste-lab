@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
-import Image from 'next/image';
 
 interface ItemType {
   id: string;
@@ -23,7 +22,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         const response = await fetch(item.content);
         const blob = await response.blob();
         await navigator.clipboard.write([
-          new window.ClipboardItem({ [blob.type]: blob })
+          new ClipboardItem({ [blob.type]: blob })
         ]);
       } else if (item.type === 'file') {
         const link = document.createElement('a');
