@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getDatabase } from 'firebase/database';
+import { getDatabase, Database } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,10 +11,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+// Check if we have enough config to initialize Firebase (e.g. client side or build time with env vars)
+const hasConfig = typeof window !== 'undefined' || !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
 // Initialize Firebase only once
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app = hasConfig
+  ? (!getApps().length ? initializeApp(firebaseConfig) : getApp())
+  : null;
 
 // Get Realtime Database instance
-const database = getDatabase(app);
+const database = (app ? getDatabase(app) : null) as Database;
 
 export { app, database };

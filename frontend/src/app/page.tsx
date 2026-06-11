@@ -4,22 +4,37 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
 
+import { ref, set } from 'firebase/database';
+import { database } from '@/lib/firebase';
+
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
   const router = useRouter();
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (sessionId.trim().length === 8) {
-      router.push(`/session/${sessionId.trim()}`);
+    const cleanId = sessionId.trim();
+    if (cleanId.length === 8) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('sessionId', cleanId);
+      }
+      router.push('/session');
     } else {
       alert("Please enter a valid 8-digit session ID.");
     }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
-    router.push(`/session/${randomId}?create=true`);
+    try {
+      await set(ref(database, `sessions/${randomId}/active`), true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('sessionId', randomId);
+      }
+      router.push('/session');
+    } catch (err) {
+      console.error('Failed to create session:', err);
+    }
   };
 
   return (
