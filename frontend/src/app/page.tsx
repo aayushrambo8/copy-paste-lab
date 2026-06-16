@@ -27,7 +27,10 @@ export default function Landing() {
   const handleCreate = async () => {
     const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
     try {
-      await set(ref(database, `sessions/${randomId}/active`), true);
+      await set(ref(database, `sessions/${randomId}`), {
+        active: true,
+        createdAt: Date.now()
+      });
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('sessionId', randomId);
       }

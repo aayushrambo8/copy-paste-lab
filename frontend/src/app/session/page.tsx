@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, onChildAdded, onDisconnect, set, get } from 'firebase/database';
+import { ref, onChildAdded, onDisconnect, set, get, remove, onValue } from 'firebase/database';
 import { database } from '@/lib/firebase';
-import { ArrowLeft, Copy, ShieldCheck, Paperclip } from 'lucide-react';
+import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 
 interface ItemType {
@@ -22,6 +22,7 @@ export default function Session() {
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [sessionState, setSessionState] = useState<'checking' | 'active' | 'inactive'>('checking');
+  const [activeUsersCount, setActiveUsersCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,17 +46,42 @@ export default function Session() {
 
     const setupSession = async () => {
       try {
-        // Check if session is active
-        const snapshot = await get(ref(database, `sessions/${sessionId}/active`));
-        if (snapshot.exists() && snapshot.val() === true) {
+        // Check if session exists and validate TTL
+        const sessionSnapshot = await get(sessionRef);
+        if (sessionSnapshot.exists() && sessionSnapshot.val().active === true) {
+          const createdAt = sessionSnapshot.val().createdAt || Date.now();
+          const age = Date.now() - createdAt;
+          const MAX_AGE = 60 * 60 * 1000; // 1 hour
+
+          if (age > MAX_AGE) {
+            await remove(sessionRef);
+            setSessionState('inactive');
+            return;
+          }
+
+          // Auto-expire if they stay on the page past the 1-hour limit
+          setTimeout(async () => {
+            await remove(sessionRef);
+            setSessionState('inactive');
+          }, MAX_AGE - age);
+
           setSessionState('active');
         } else {
           setSessionState('inactive');
           return;
         }
 
-        // Ephemeral logic: Burn the session if a client disconnects
-        onDisconnect(sessionRef).remove();
+        // Track individual connection for Ping / Active users counter
+        const connectionId = Math.random().toString(36).substr(2, 9);
+        const connectionRef = ref(database, `sessions/${sessionId}/connections/${connectionId}`);
+        await set(connectionRef, true);
+        onDisconnect(connectionRef).remove();
+
+        // Listen for active connection count
+        const connectionsRef = ref(database, `sessions/${sessionId}/connections`);
+        onValue(connectionsRef, (snap) => {
+          setActiveUsersCount(snap.size);
+        });
 
         unsubscribe = onChildAdded(itemsRef, (snapshot) => {
           const item = snapshot.val() as ItemType;
@@ -318,6 +344,17 @@ export default function Session() {
               <Copy className="w-4 h-4 ml-2 opacity-50" />
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 bg-black/40 border border-glass-border px-3 py-1.5 rounded-full">
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </div>
+          <span className="text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-green-400" />
+            {activeUsersCount} {activeUsersCount === 1 ? 'Device' : 'Devices'}
+          </span>
         </div>
       </header>
 
