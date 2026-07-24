@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, onChildAdded, onDisconnect, set, get, remove, onValue } from 'firebase/database';
-import { database, ensureFirebaseAuth } from '@/lib/firebase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { supabase, CLIPBOARD_BUCKET } from '@/lib/supabase';
 import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 
@@ -15,16 +15,20 @@ interface ItemType {
   fileName?: string;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function Session() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [items, setItems] = useState<ItemType[]>([]);
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [sessionState, setSessionState] = useState<'checking' | 'active' | 'inactive'>('checking');
-  const [activeUsersCount, setActiveUsersCount] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeUsersCount, setActiveUsersCount] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
+  // Resolve session ID from sessionStorage (set by the landing page)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedId = sessionStorage.getItem('sessionId');
@@ -36,83 +40,111 @@ export default function Session() {
     }
   }, [router]);
 
+  // Subscribe to the realtime channel for this session.
+  // There's no database record to create/check: the channel exists
+  // implicitly the moment any device subscribes to it.
   useEffect(() => {
     if (!sessionId) return;
 
-    const sessionRef = ref(database, `sessions/${sessionId}`);
-    const itemsRef = ref(database, `sessions/${sessionId}/items`);
+    const clientId = Math.random().toString(36).substr(2, 9);
+    const channel = supabase.channel(`session:${sessionId}`, {
+      config: {
+        presence: { key: clientId },
+      },
+    });
+    channelRef.current = channel;
 
-    let unsubscribe: (() => void) | undefined;
-
-    const setupSession = async () => {
-      try {
-        await ensureFirebaseAuth();
-
-        // Check if session exists and validate TTL
-        const sessionSnapshot = await get(sessionRef);
-        if (sessionSnapshot.exists() && sessionSnapshot.val().active === true) {
-          const createdAt = sessionSnapshot.val().createdAt || Date.now();
-          const age = Date.now() - createdAt;
-          const MAX_AGE = 60 * 60 * 1000; // 1 hour
-
-          if (age > MAX_AGE) {
-            await remove(sessionRef);
-            setSessionState('inactive');
-            return;
-          }
-
-          // Auto-expire if they stay on the page past the 1-hour limit
-          setTimeout(async () => {
-            await remove(sessionRef);
-            setSessionState('inactive');
-          }, MAX_AGE - age);
-
-          setSessionState('active');
-        } else {
-          setSessionState('inactive');
-          return;
+    channel
+      .on('broadcast', { event: 'clipboard' }, ({ payload }) => {
+        const item = payload as ItemType;
+        setItems((prev) => {
+          if (prev.some((i) => i.id === item.id)) return prev;
+          return [item, ...prev];
+        });
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        setActiveUsersCount(Math.max(1, Object.keys(state).length));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() });
         }
-
-        // Track individual connection for Ping / Active users counter
-        const connectionId = Math.random().toString(36).substr(2, 9);
-        const connectionRef = ref(database, `sessions/${sessionId}/connections/${connectionId}`);
-        await set(connectionRef, true);
-        onDisconnect(connectionRef).remove();
-
-        // Listen for active connection count
-        const connectionsRef = ref(database, `sessions/${sessionId}/connections`);
-        onValue(connectionsRef, (snap) => {
-          setActiveUsersCount(snap.size);
-        });
-
-        unsubscribe = onChildAdded(itemsRef, (snapshot) => {
-          const item = snapshot.val() as ItemType;
-          setItems(prev => {
-            // Prevent duplicates
-            if (prev.some(i => i.id === item.id)) return prev;
-            return [item, ...prev];
-          });
-        });
-      } catch (err) {
-        console.error('Failed to verify session: ', err);
-        setSessionState('inactive');
-      }
-    };
-
-    setupSession();
+      });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [sessionId, router]);
+  }, [sessionId]);
 
-  const writeItemToSession = async (newItem: ItemType) => {
-    if (!sessionId) return;
-    await ensureFirebaseAuth();
-    await set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+  const broadcastItem = useCallback((newItem: ItemType) => {
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'clipboard',
+      payload: newItem,
+    });
+  }, []);
+
+  // Uploads a blob to Supabase Storage and returns its public URL.
+  // Used for images/files since their base64 size would exceed the
+  // realtime broadcast payload limit.
+  const uploadToStorage = async (blob: Blob, fileName: string): Promise<string> => {
+    const safeName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const path = `${sessionId}/${Date.now()}-${Math.random().toString(36).substr(2, 6)}-${safeName}`;
+    const { error } = await supabase.storage.from(CLIPBOARD_BUCKET).upload(path, blob, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: blob.type || undefined,
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from(CLIPBOARD_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
   };
 
-  const handlePaste = (e: any) => {
+  const addTextItem = useCallback((text: string) => {
+    if (!text.trim()) return;
+    const newItem: ItemType = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: 'text',
+      content: text,
+      timestamp: new Date().toISOString(),
+    };
+    setItems((prev) => [newItem, ...prev]);
+    broadcastItem(newItem);
+  }, [broadcastItem]);
+
+  const processFile = useCallback(async (file: File) => {
+    if (!sessionId) return;
+    if (file.size > MAX_FILE_SIZE) {
+      alert('File is too large! Maximum size is 5 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const publicUrl = await uploadToStorage(file, file.name || 'file');
+      const isImage = file.type.startsWith('image/');
+      const newItem: ItemType = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: isImage ? 'image' : 'file',
+        content: publicUrl,
+        timestamp: new Date().toISOString(),
+        fileName: isImage ? undefined : file.name,
+      };
+      setItems((prev) => [newItem, ...prev]);
+      broadcastItem(newItem);
+    } catch (err) {
+      console.error('Failed to upload item:', err);
+      alert('Failed to upload. Please check your connection and try again.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [sessionId, broadcastItem]);
+
+  const handlePaste = useCallback((e: any) => {
     if (!sessionId) return;
     if (e.target?.isContentEditable) {
       e.preventDefault();
@@ -129,40 +161,12 @@ export default function Session() {
       if (item.kind === 'file') {
         const blob = item.getAsFile();
         if (!blob) continue;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (!event.target?.result) return;
-          const newItem: ItemType = {
-            id: Math.random().toString(36).substr(2, 9),
-            type: 'image',
-            content: event.target.result as string,
-            timestamp: new Date().toISOString()
-          };
-          setItems(prev => [newItem, ...prev]);
-          void writeItemToSession(newItem).catch((err) => {
-            console.error('Failed to store pasted item:', err);
-          });
-        };
-        reader.readAsDataURL(blob);
-
+        void processFile(blob);
       } else if (item.type === 'text/plain') {
-        item.getAsString((text: string) => {
-          if (!text.trim()) return;
-          const newItem: ItemType = {
-            id: Math.random().toString(36).substr(2, 9),
-            type: 'text',
-            content: text,
-            timestamp: new Date().toISOString()
-          };
-          setItems(prev => [newItem, ...prev]);
-          void writeItemToSession(newItem).catch((err) => {
-            console.error('Failed to store pasted item:', err);
-          });
-        });
+        item.getAsString((text: string) => addTextItem(text));
       }
     }
-  };
+  }, [sessionId, processFile, addTextItem]);
 
   const handlePasteButtonClick = async () => {
     if (!sessionId) return;
@@ -170,94 +174,34 @@ export default function Session() {
       if (navigator.clipboard.read) {
         const clipboardItems = await navigator.clipboard.read();
         for (const clipboardItem of clipboardItems) {
-          const imageTypes = clipboardItem.types.filter(type => type.startsWith('image/'));
+          const imageTypes = clipboardItem.types.filter((type) => type.startsWith('image/'));
           if (imageTypes.length > 0) {
             const blob = await clipboardItem.getType(imageTypes[0]);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              if (!event.target?.result) return;
-              const newItem: ItemType = {
-                id: Math.random().toString(36).substr(2, 9),
-                type: 'image',
-                content: event.target.result as string,
-                timestamp: new Date().toISOString()
-              };
-              setItems(prev => [newItem, ...prev]);
-              void writeItemToSession(newItem).catch((err) => {
-                console.error('Failed to store pasted item:', err);
-              });
-            };
-            reader.readAsDataURL(blob);
+            const ext = imageTypes[0].split('/')[1] || 'png';
+            void processFile(new File([blob], `pasted-image.${ext}`, { type: blob.type }));
             return;
           }
-          
+
           if (clipboardItem.types.includes('text/plain')) {
             const blob = await clipboardItem.getType('text/plain');
             const text = await blob.text();
-            if (!text.trim()) continue;
-            const newItem: ItemType = {
-              id: Math.random().toString(36).substr(2, 9),
-              type: 'text',
-              content: text,
-              timestamp: new Date().toISOString()
-            };
-            setItems(prev => [newItem, ...prev]);
-            void writeItemToSession(newItem).catch((err) => {
-              console.error('Failed to store pasted item:', err);
-            });
+            addTextItem(text);
             return;
           }
         }
       } else {
         const text = await navigator.clipboard.readText();
-        if (!text.trim()) return;
-        const newItem: ItemType = {
-          id: Math.random().toString(36).substr(2, 9),
-          type: 'text',
-          content: text,
-          timestamp: new Date().toISOString()
-        };
-        setItems(prev => [newItem, ...prev]);
-        void writeItemToSession(newItem).catch((err) => {
-          console.error('Failed to store pasted item:', err);
-        });
+        addTextItem(text);
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err);
-      alert("Browser blocked direct access. Please press Ctrl+V anywhere on the page to paste.");
+      alert('Browser blocked direct access. Please press Ctrl+V anywhere on the page to paste.');
     }
-  };
-
-  const processFile = (file: File) => {
-    if (!sessionId) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File is too large! Maximum size is 5 MB.");
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (!event.target?.result) return;
-      const newItem: ItemType = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: file.type.startsWith('image/') ? 'image' : 'file',
-        content: event.target.result as string,
-        timestamp: new Date().toISOString(),
-        fileName: file.name
-      };
-      setItems(prev => [newItem, ...prev]);
-      void writeItemToSession(newItem).catch((err) => {
-        console.error('Failed to store uploaded item:', err);
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) processFile(file);
+    if (file) void processFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -273,9 +217,9 @@ export default function Session() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (file) void processFile(file);
   };
 
   useEffect(() => {
@@ -283,7 +227,7 @@ export default function Session() {
     return () => {
       window.removeEventListener('paste', handlePaste);
     };
-  }, [sessionId]);
+  }, [handlePaste]);
 
   const copySessionId = () => {
     if (!sessionId) return;
@@ -294,36 +238,6 @@ export default function Session() {
 
   if (!sessionId) {
     return null;
-  }
-
-  if (sessionState === 'checking') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d0d11] text-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-mono text-gray-400">Verifying session...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (sessionState === 'inactive') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d0d11] text-white p-4">
-        <div className="glass-panel p-8 text-center max-w-md w-full rounded-3xl border border-red-500/30">
-          <h2 className="text-2xl font-bold mb-4 text-red-400">Invalid or Inactive Session</h2>
-          <p className="text-gray-400 mb-6 font-mono text-sm leading-relaxed">
-            This session ID is not active or has already expired. Sessions are completely ephemeral and disappear when all devices disconnect.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="w-full p-4 rounded-xl font-medium bg-accent text-white hover:bg-accent-hover active:scale-[0.98] transition-all"
-          >
-            Go Back Home
-          </button>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -387,12 +301,13 @@ export default function Session() {
             <div className="flex gap-3 relative">
               <button 
                 onClick={handlePasteButtonClick}
-                className="flex-1 glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md active:scale-[0.98] cursor-pointer"
+                disabled={isUploading}
+                className="flex-1 glass-panel rounded-2xl p-4 md:p-6 text-center border border-accent/30 flex items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 focus:border-accent/80 focus:shadow-[0_0_20px_var(--tw-colors-accent)] bg-black/40 backdrop-blur-md active:scale-[0.98] cursor-pointer disabled:opacity-60"
               >
                 <div className="flex flex-col items-center opacity-90">
                   <div className="flex items-center gap-2 text-lg md:text-xl font-bold text-white tracking-wide">
                     <Copy className="w-5 h-5 md:w-6 md:h-6" />
-                    <span>Tap to Paste</span>
+                    <span>{isUploading ? 'Uploading...' : 'Tap to Paste'}</span>
                   </div>
                   <span className="text-xs md:text-sm text-gray-400 mt-1">Instantly paste text or images from clipboard</span>
                 </div>
@@ -400,7 +315,8 @@ export default function Session() {
               
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-[70px] md:w-[90px] shrink-0 glass-panel rounded-2xl border border-accent/30 flex flex-col items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 hover:bg-white/5 active:scale-[0.95] cursor-pointer bg-black/40 backdrop-blur-md text-gray-400 hover:text-white"
+                disabled={isUploading}
+                className="w-[70px] md:w-[90px] shrink-0 glass-panel rounded-2xl border border-accent/30 flex flex-col items-center justify-center min-h-[70px] md:min-h-[90px] transition-all hover:border-accent/60 hover:bg-white/5 active:scale-[0.95] cursor-pointer bg-black/40 backdrop-blur-md text-gray-400 hover:text-white disabled:opacity-60"
                 title="Upload PDF or File"
               >
                 <Paperclip className="w-6 h-6 md:w-7 md:h-7 mb-1" />

@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
 
-import { ref, set } from 'firebase/database';
-import { database, ensureFirebaseAuth } from '@/lib/firebase';
-
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
   const router = useRouter();
@@ -24,21 +21,14 @@ export default function Landing() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
+    // No backend write needed: the session "exists" the moment a device
+    // subscribes to its realtime channel. Just mint an ID and go.
     const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
-    try {
-      await ensureFirebaseAuth();
-      await set(ref(database, `sessions/${randomId}`), {
-        active: true,
-        createdAt: Date.now()
-      });
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('sessionId', randomId);
-      }
-      router.push('/session');
-    } catch (err) {
-      console.error('Failed to create session:', err);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('sessionId', randomId);
     }
+    router.push('/session');
   };
 
   return (
