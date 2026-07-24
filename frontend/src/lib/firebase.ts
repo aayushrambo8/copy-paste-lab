@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase, Database } from 'firebase/database';
+import { getAuth, signInAnonymously, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,7 +20,33 @@ const app = hasConfig
   ? (!getApps().length ? initializeApp(firebaseConfig) : getApp())
   : null;
 
+const auth = (app ? getAuth(app) : null) as Auth;
+
 // Get Realtime Database instance
 const database = (app ? getDatabase(app) : null) as Database;
 
-export { app, database };
+let authReadyPromise: Promise<void> | null = null;
+
+async function ensureFirebaseAuth() {
+  if (!auth) return null;
+
+  if (!authReadyPromise) {
+    authReadyPromise = (async () => {
+      await auth.authStateReady();
+
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+
+      await auth.authStateReady();
+    })().catch((err) => {
+      authReadyPromise = null;
+      throw err;
+    });
+  }
+
+  await authReadyPromise;
+  return auth.currentUser;
+}
+
+export { app, auth, database, ensureFirebaseAuth };

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
 
 import { ref, set } from 'firebase/database';
-import { database } from '@/lib/firebase';
+import { database, ensureFirebaseAuth } from '@/lib/firebase';
 
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
@@ -27,6 +27,7 @@ export default function Landing() {
   const handleCreate = async () => {
     const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
     try {
+      await ensureFirebaseAuth();
       await set(ref(database, `sessions/${randomId}`), {
         active: true,
         createdAt: Date.now()

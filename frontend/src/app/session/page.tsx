@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, onChildAdded, onDisconnect, set, get, remove, onValue } from 'firebase/database';
-import { database } from '@/lib/firebase';
+import { database, ensureFirebaseAuth } from '@/lib/firebase';
 import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 
@@ -46,6 +46,8 @@ export default function Session() {
 
     const setupSession = async () => {
       try {
+        await ensureFirebaseAuth();
+
         // Check if session exists and validate TTL
         const sessionSnapshot = await get(sessionRef);
         if (sessionSnapshot.exists() && sessionSnapshot.val().active === true) {
@@ -104,6 +106,12 @@ export default function Session() {
     };
   }, [sessionId, router]);
 
+  const writeItemToSession = async (newItem: ItemType) => {
+    if (!sessionId) return;
+    await ensureFirebaseAuth();
+    await set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+  };
+
   const handlePaste = (e: any) => {
     if (!sessionId) return;
     if (e.target?.isContentEditable) {
@@ -132,7 +140,9 @@ export default function Session() {
             timestamp: new Date().toISOString()
           };
           setItems(prev => [newItem, ...prev]);
-          set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+          void writeItemToSession(newItem).catch((err) => {
+            console.error('Failed to store pasted item:', err);
+          });
         };
         reader.readAsDataURL(blob);
 
@@ -146,7 +156,9 @@ export default function Session() {
             timestamp: new Date().toISOString()
           };
           setItems(prev => [newItem, ...prev]);
-          set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+          void writeItemToSession(newItem).catch((err) => {
+            console.error('Failed to store pasted item:', err);
+          });
         });
       }
     }
@@ -171,7 +183,9 @@ export default function Session() {
                 timestamp: new Date().toISOString()
               };
               setItems(prev => [newItem, ...prev]);
-              set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+              void writeItemToSession(newItem).catch((err) => {
+                console.error('Failed to store pasted item:', err);
+              });
             };
             reader.readAsDataURL(blob);
             return;
@@ -188,7 +202,9 @@ export default function Session() {
               timestamp: new Date().toISOString()
             };
             setItems(prev => [newItem, ...prev]);
-            set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+            void writeItemToSession(newItem).catch((err) => {
+              console.error('Failed to store pasted item:', err);
+            });
             return;
           }
         }
@@ -202,7 +218,9 @@ export default function Session() {
           timestamp: new Date().toISOString()
         };
         setItems(prev => [newItem, ...prev]);
-        set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+        void writeItemToSession(newItem).catch((err) => {
+          console.error('Failed to store pasted item:', err);
+        });
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err);
@@ -229,7 +247,9 @@ export default function Session() {
         fileName: file.name
       };
       setItems(prev => [newItem, ...prev]);
-      set(ref(database, `sessions/${sessionId}/items/${newItem.id}`), newItem);
+      void writeItemToSession(newItem).catch((err) => {
+        console.error('Failed to store uploaded item:', err);
+      });
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsDataURL(file);
