@@ -12,8 +12,8 @@ const config: Config = {
         background: '#090412', // Deep vibrant dark violet
         foreground: '#ffffff',
         accent: {
-          DEFAULT: '#d946ef', // Neon Fuchsia
-          hover: '#c026d3',
+          DEFAULT: '#ccff00', // Neon Yellow
+          hover: '#b2e600',
         },
         glass: {
           DEFAULT: 'rgba(255, 255, 255, 0.08)', // Brighter glass

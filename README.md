@@ -1,6 +1,6 @@
 # Paste Labs
 
-![Supports Images & Files](https://img.shields.io/badge/Supports-Images%20%26%20Files-d946ef?style=flat-square&logo=react)
+![Supports Images & Files](https://img.shields.io/badge/Supports-Images%20%26%20Files-ccff00?style=flat-square&logo=react)
 ![Real-time](https://img.shields.io/badge/Real--time-WebSocket-06b6d4?style=flat-square)
 
 **Paste Labs** is a real-time, completely ephemeral clipboard syncing tool designed to seamlessly bridge your devices without the hassle of logging in or using messaging apps like WhatsApp. 
