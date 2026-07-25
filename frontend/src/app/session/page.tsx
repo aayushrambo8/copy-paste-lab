@@ -249,7 +249,7 @@ export default function Session() {
     >
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center border-4 border-accent border-dashed m-4 rounded-3xl">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center border-4 border-accent border-dashed m-4 rounded-3xl">
           <div className="flex flex-col items-center pointer-events-none text-accent">
             <Paperclip className="w-20 h-20 mb-4 animate-bounce" />
             <h2 className="text-3xl font-bold text-white tracking-widest">DROP FILE TO SHARE</h2>
@@ -265,12 +265,11 @@ export default function Session() {
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div
-          className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
+        <div className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
           onClick={copySessionId}
         >
           <span className="text-gray-400 text-sm">Session ID</span>
-          <div className="bg-accent/15 border border-accent/30 text-indigo-300 px-3 py-1 rounded-full font-mono text-lg tracking-wide flex items-center">
+          <div className="bg-accent/15 border border-accent/30 text-accent px-3 py-1 rounded-full font-mono text-lg tracking-wide flex items-center">
             {sessionId}
             {copiedId ? (
               <ShieldCheck className="w-4 h-4 text-green-400 ml-2" />
@@ -335,8 +334,8 @@ export default function Session() {
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 text-center text-gray-400 min-h-[40vh] pb-24">
-            <div className="w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/30 mb-6 relative animate-pulse-glow">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-accent rounded-full shadow-[0_0_20px_var(--tw-colors-accent)]"></div>
+            <div className="w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/20 mb-6 relative animate-pulse-glow">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-accent rounded-full shadow-[0_0_15px_rgba(204,255,0,0.3)]"></div>
             </div>
             <h3 className="text-white text-2xl mb-2">Waiting for clipboard items...</h3>
             <p className="max-w-md">Press <kbd className="bg-white/10 px-2 py-1 rounded text-white text-sm mx-1">Ctrl+V</kbd> anywhere, or use the Paste box below.</p>
@@ -351,8 +350,8 @@ export default function Session() {
       </main>
 
       {/* Background glow effects */}
-      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(6,182,212,0.6)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none"></div>
-      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(217,70,239,0.6)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
+      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(204,255,0,0.15)_0%,transparent_70%)] rounded-full blur-[120px] opacity-40 animate-float pointer-events-none"></div>
+      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(204,255,0,0.15)_0%,transparent_70%)] rounded-full blur-[120px] opacity-40 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
     </div>
   );
 }

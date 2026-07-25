@@ -123,9 +123,9 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         <div className="hidden md:flex absolute inset-0 bg-black/70 items-center justify-center gap-4 opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
           <button
             onClick={(e) => { e.stopPropagation(); handleCopy(); }}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-accent text-white hover:bg-accent-hover active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 shadow-lg"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-accent text-black hover:bg-accent-hover active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 shadow-lg"
           >
-            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+            {copied ? <Check className="w-5 h-5 text-green-700" /> : <Copy className="w-5 h-5" />}
             <span>{copied ? 'Copied!' : 'Copy Image'}</span>
           </button>
           <button
@@ -138,7 +138,7 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
         </div>
       ) : (
         <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
-          <span className="font-semibold text-lg tracking-wide text-white transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
+          <span className="font-bold text-lg tracking-wide text-black transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
             {item.type === 'file' ? 'Click to Download' : 'Click to Copy'}
           </span>
         </div>

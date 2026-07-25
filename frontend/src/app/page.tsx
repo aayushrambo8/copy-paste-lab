@@ -65,7 +65,7 @@ export default function Landing() {
         <div className="flex flex-col gap-4 md:gap-5">
           <button 
             onClick={handleCreate}
-            className="flex items-center justify-center gap-2 w-full p-4 rounded-xl font-medium bg-accent text-white shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:bg-accent-hover active:scale-[0.98] transition-all"
+            className="flex items-center justify-center gap-2 w-full p-4 rounded-xl font-medium bg-accent text-black shadow-[0_0_15px_rgba(204,255,0,0.2)] hover:bg-accent-hover active:scale-[0.98] transition-all"
           >
             <Copy className="w-5 h-5" />
             <span>Create New Session</span>
@@ -99,8 +99,8 @@ export default function Landing() {
       </div>
       
       {/* Background glow effects */}
-      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(6,182,212,0.7)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none"></div>
-      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(217,70,239,0.7)_0%,transparent_70%)] rounded-full blur-[120px] opacity-60 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
+      <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(204,255,0,0.15)_0%,transparent_70%)] rounded-full blur-[120px] opacity-40 animate-float pointer-events-none"></div>
+      <div className="absolute bottom-[-50px] right-[-50px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(204,255,0,0.15)_0%,transparent_70%)] rounded-full blur-[120px] opacity-40 animate-float pointer-events-none" style={{ animationDelay: '-5s' }}></div>
     </div>
   );
 }
