@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
 
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryId = searchParams.get('id') || searchParams.get('code');
+      if (queryId && /^\d{8}$/.test(queryId)) {
+        sessionStorage.setItem('sessionId', queryId);
+        router.replace(`/session?id=${queryId}`);
+      }
+    }
+  }, [router]);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();

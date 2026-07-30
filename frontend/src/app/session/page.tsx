@@ -4,8 +4,9 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase, CLIPBOARD_BUCKET } from '@/lib/supabase';
-import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity } from 'lucide-react';
+import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity, QrCode } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
+import QRCodeModal from '@/components/QRCodeModal';
 
 interface ItemType {
   id: string;
@@ -25,18 +26,32 @@ export default function Session() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeUsersCount, setActiveUsersCount] = useState(1);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
-  // Resolve session ID from sessionStorage (set by the landing page)
+  // Resolve session ID from URL parameter (e.g. /session?id=12345678) or sessionStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedId = sessionStorage.getItem('sessionId');
-      if (!storedId || !/^\d{8}$/.test(storedId)) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryId = searchParams.get('id') || searchParams.get('code');
+      
+      let validId: string | null = null;
+      if (queryId && /^\d{8}$/.test(queryId)) {
+        validId = queryId;
+        sessionStorage.setItem('sessionId', validId);
+      } else {
+        const storedId = sessionStorage.getItem('sessionId');
+        if (storedId && /^\d{8}$/.test(storedId)) {
+          validId = storedId;
+        }
+      }
+
+      if (!validId) {
         router.replace('/');
         return;
       }
-      setSessionId(storedId);
+      setSessionId(validId);
     }
   }, [router]);
 
@@ -285,18 +300,31 @@ export default function Session() {
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
-          onClick={copySessionId}
-        >
-          <span className="text-gray-400 text-sm">Session ID</span>
-          <div className="bg-accent/15 border border-accent/30 text-accent px-3 py-1 rounded-full font-mono text-lg tracking-wide flex items-center">
-            {sessionId}
-            {copiedId ? (
-              <ShieldCheck className="w-4 h-4 text-green-400 ml-2" />
-            ) : (
-              <Copy className="w-4 h-4 ml-2 opacity-50" />
-            )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div 
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
+            onClick={copySessionId}
+            title="Click to copy Session ID"
+          >
+            <span className="text-gray-400 text-sm hidden sm:inline">Session ID</span>
+            <div className="bg-accent/15 border border-accent/30 text-accent px-3 py-1 rounded-full font-mono text-base md:text-lg tracking-wide flex items-center">
+              {sessionId}
+              {copiedId ? (
+                <ShieldCheck className="w-4 h-4 text-green-400 ml-2" />
+              ) : (
+                <Copy className="w-4 h-4 ml-2 opacity-50" />
+              )}
+            </div>
           </div>
+
+          <button
+            onClick={() => setIsQRModalOpen(true)}
+            className="flex items-center gap-1.5 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.15)]"
+            title="Show QR Code to share session"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>QR Code</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 bg-black/40 border border-glass-border px-3 py-1.5 rounded-full">
@@ -306,10 +334,17 @@ export default function Session() {
           </div>
           <span className="text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-green-400" />
-            {activeUsersCount} {activeUsersCount === 1 ? 'Device' : 'Devices'}
+            {activeUsersCount} <span className="hidden sm:inline">{activeUsersCount === 1 ? 'Device' : 'Devices'}</span>
           </span>
         </div>
       </header>
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        sessionId={sessionId}
+      />
 
       <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col">
 
