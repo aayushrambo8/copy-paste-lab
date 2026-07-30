@@ -114,6 +114,15 @@ export default function Session() {
     broadcastItem(newItem);
   }, [broadcastItem]);
 
+  const fileToDataUrl = (file: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processFile = useCallback(async (file: File) => {
     if (!sessionId) return;
     if (file.size > MAX_FILE_SIZE) {
@@ -123,25 +132,36 @@ export default function Session() {
     }
 
     setIsUploading(true);
+    const isImage = file.type.startsWith('image/');
+    let contentUrl: string | null = null;
+
     try {
-      const publicUrl = await uploadToStorage(file, file.name || 'file');
-      const isImage = file.type.startsWith('image/');
+      contentUrl = await uploadToStorage(file, file.name || 'file');
+    } catch (err: any) {
+      console.warn('Supabase storage upload failed, attempting Base64 fallback:', err);
+      try {
+        contentUrl = await fileToDataUrl(file);
+      } catch (fallbackErr) {
+        console.error('Failed to convert file to Base64 fallback:', fallbackErr);
+      }
+    }
+
+    if (contentUrl) {
       const newItem: ItemType = {
         id: Math.random().toString(36).substr(2, 9),
         type: isImage ? 'image' : 'file',
-        content: publicUrl,
+        content: contentUrl,
         timestamp: new Date().toISOString(),
         fileName: isImage ? undefined : file.name,
       };
       setItems((prev) => [newItem, ...prev]);
       broadcastItem(newItem);
-    } catch (err) {
-      console.error('Failed to upload item:', err);
-      alert('Failed to upload. Please check your connection and try again.');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    } else {
+      alert('Failed to process file for sharing. Please check your file and try again.');
     }
+
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }, [sessionId, broadcastItem]);
 
   const handlePaste = useCallback((e: any) => {
