@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Check, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
+import { Copy, Check, FileText, Image as ImageIcon, File, Download, Loader2 } from 'lucide-react';
 
 interface ItemType {
   id: string;
@@ -11,49 +11,119 @@ interface ItemType {
   fileName?: string;
 }
 
+// Helper to convert any image URL or Data URI to a PNG Blob for ClipboardItem API
+async function fetchImageAsPngBlob(contentUrl: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get canvas 2D context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to convert canvas to PNG blob'));
+        }
+      }, 'image/png');
+    };
+    img.onerror = (err) => reject(err);
+    img.src = contentUrl;
+  });
+}
+
+// Helper to trigger cross-origin & blob file downloads reliably
+async function triggerFileDownload(url: string, fileName: string) {
+  try {
+    if (url.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error status: ${response.status}`);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (err) {
+    console.warn('Direct blob download failed, falling back to direct window open:', err);
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 export default function ClipboardItem({ item }: { item: ItemType }) {
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleCopy = async () => {
     try {
       if (item.type === 'text') {
         await navigator.clipboard.writeText(item.content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       } else if (item.type === 'image') {
-        const response = await fetch(item.content);
-        const blob = await response.blob();
+        const pngBlob = await fetchImageAsPngBlob(item.content);
         await navigator.clipboard.write([
-          new window.ClipboardItem({ [blob.type]: blob })
+          new window.ClipboardItem({ 'image/png': pngBlob })
         ]);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       } else if (item.type === 'file') {
-        const link = document.createElement('a');
-        link.href = item.content;
-        link.download = item.fileName || 'download';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        await handleDownload();
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      console.error('Failed to copy/download item: ', err);
+      if (item.type === 'image') {
+        alert('Could not copy image to clipboard automatically. Try downloading it instead.');
+      }
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
     try {
-      const link = document.createElement('a');
-      link.href = item.content;
-      let extension = 'png';
-      const match = item.content.match(/^data:image\/(\w+);base64,/);
-      if (match) {
-        extension = match[1];
+      let fileName = item.fileName;
+      if (!fileName) {
+        if (item.type === 'image') {
+          let extension = 'png';
+          const match = item.content.match(/^data:image\/(\w+);base64,/);
+          if (match) extension = match[1];
+          fileName = `pasted-image-${item.id}.${extension}`;
+        } else {
+          fileName = `shared-file-${item.id}`;
+        }
       }
-      link.download = item.fileName || `pasted-image-${item.id}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await triggerFileDownload(item.content, fileName);
     } catch (err) {
-      console.error('Failed to download image: ', err);
+      console.error('Failed to download: ', err);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -81,18 +151,26 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-                className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5"
+                disabled={isDownloading}
+                className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 active:scale-90 rounded-full hover:bg-white/5 disabled:opacity-50"
                 title="Download Image"
               >
-                <Download className="w-4 h-4" />
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Download className="w-4 h-4" />}
               </button>
             </>
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); handleCopy(); }}
-              className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5"
+              disabled={isDownloading}
+              className="bg-transparent border-none text-gray-400 hover:text-white transition-colors p-2 -mr-2 active:scale-90 rounded-full hover:bg-white/5 disabled:opacity-50"
             >
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : item.type === 'file' ? <Download className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? (
+                <Check className="w-4 h-4 text-green-400" />
+              ) : item.type === 'file' ? (
+                isDownloading ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Download className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
             </button>
           )}
         </div>
@@ -105,13 +183,12 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           </p>
         ) : item.type === 'image' ? (
           <div className="relative w-full h-full min-h-[150px]">
-            {/* Note: In a real app we'd use Next Image, but since these are data URIs from clipboard, an img tag is easier to handle safely. */}
             <img src={item.content} alt="Pasted" className="w-full h-full object-cover rounded-lg" />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[150px] opacity-80">
             <File className="w-16 h-16 mb-4 text-accent" />
-            <p className="font-mono text-sm text-center break-all px-4">{item.fileName || 'document.pdf'}</p>
+            <p className="font-mono text-sm text-center break-all px-4">{item.fileName || 'file-download'}</p>
           </div>
         )}
         {item.type === 'text' && (
@@ -130,16 +207,17 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white/10 border border-white/20 text-white hover:bg-white/20 active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 delay-75 shadow-lg"
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white/10 border border-white/20 text-white hover:bg-white/20 active:scale-[0.97] transition-all transform translate-y-2 group-hover:translate-y-0 duration-200 delay-75 shadow-lg disabled:opacity-50"
           >
-            <Download className="w-5 h-5" />
-            <span>Download</span>
+            {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+            <span>{isDownloading ? 'Downloading...' : 'Download'}</span>
           </button>
         </div>
       ) : (
         <div className="hidden md:flex absolute inset-0 bg-accent/80 items-center justify-center opacity-0 transition-opacity duration-200 backdrop-blur-sm group-hover:opacity-100">
           <span className="font-bold text-lg tracking-wide text-black transform translate-y-2 transition-transform duration-200 group-hover:translate-y-0">
-            {item.type === 'file' ? 'Click to Download' : 'Click to Copy'}
+            {item.type === 'file' ? (isDownloading ? 'Downloading...' : 'Click to Download') : 'Click to Copy'}
           </span>
         </div>
       )}
@@ -155,19 +233,21 @@ export default function ClipboardItem({ item }: { item: ItemType }) {
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-            className="flex-1 bg-black/40 py-3 text-center text-xs text-gray-300 font-bold uppercase hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
+            disabled={isDownloading}
+            className="flex-1 bg-black/40 py-3 text-center text-xs text-gray-300 font-bold uppercase hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
-            <Download className="w-4 h-4" />
-            <span>Download</span>
+            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Download className="w-4 h-4" />}
+            <span>{isDownloading ? 'Downloading...' : 'Download'}</span>
           </button>
         </div>
       ) : (
         <div className="md:hidden bg-black/40 py-2 text-center border-t border-glass-border/50">
           <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
-            {copied ? (item.type === 'file' ? 'Downloaded!' : 'Copied!') : (item.type === 'file' ? 'Tap to Download' : 'Tap to Copy')}
+            {copied ? (item.type === 'file' ? 'Downloaded!' : 'Copied!') : (item.type === 'file' ? (isDownloading ? 'Downloading...' : 'Tap to Download') : 'Tap to Copy')}
           </span>
         </div>
       )}
     </div>
   );
 }
+

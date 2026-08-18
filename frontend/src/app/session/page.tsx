@@ -138,6 +138,43 @@ export default function Session() {
     });
   };
 
+  const compressImageForBroadcast = (file: Blob, maxDimension = 1200, quality = 0.75): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get 2D context'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = (err) => reject(err);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processFile = useCallback(async (file: File) => {
     if (!sessionId) return;
     if (file.size > MAX_FILE_SIZE) {
@@ -153,11 +190,15 @@ export default function Session() {
     try {
       contentUrl = await uploadToStorage(file, file.name || 'file');
     } catch (err: any) {
-      console.warn('Supabase storage upload failed, attempting Base64 fallback:', err);
+      console.warn('Supabase storage upload failed, attempting compressed/data URL fallback:', err);
       try {
-        contentUrl = await fileToDataUrl(file);
+        if (isImage) {
+          contentUrl = await compressImageForBroadcast(file);
+        } else {
+          contentUrl = await fileToDataUrl(file);
+        }
       } catch (fallbackErr) {
-        console.error('Failed to convert file to Base64 fallback:', fallbackErr);
+        console.error('Failed to convert file to Data URL fallback:', fallbackErr);
       }
     }
 
@@ -167,7 +208,7 @@ export default function Session() {
         type: isImage ? 'image' : 'file',
         content: contentUrl,
         timestamp: new Date().toISOString(),
-        fileName: isImage ? undefined : file.name,
+        fileName: isImage ? undefined : (file.name || 'shared-file'),
       };
       setItems((prev) => [newItem, ...prev]);
       broadcastItem(newItem);
@@ -380,7 +421,7 @@ export default function Session() {
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileUpload} 
-                accept=".pdf,image/*" 
+                accept="*/*" 
                 className="hidden" 
               />
             </div>
