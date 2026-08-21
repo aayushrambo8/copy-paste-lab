@@ -7,6 +7,7 @@ import { supabase, CLIPBOARD_BUCKET } from '@/lib/supabase';
 import { ArrowLeft, Copy, ShieldCheck, Paperclip, Activity, QrCode } from 'lucide-react';
 import ClipboardItem from '@/components/ClipboardItem';
 import QRCodeModal from '@/components/QRCodeModal';
+import GitHubDropdown from '@/components/GitHubDropdown';
 
 interface ItemType {
   id: string;
@@ -368,15 +369,19 @@ export default function Session() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 bg-black/40 border border-glass-border px-3 py-1.5 rounded-full">
-          <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+        <div className="flex items-center gap-2 md:gap-3">
+          <GitHubDropdown />
+
+          <div className="flex items-center gap-2 bg-black/40 border border-glass-border px-3 py-1.5 rounded-full">
+            <div className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </div>
+            <span className="text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-green-400" />
+              {activeUsersCount} <span className="hidden sm:inline">{activeUsersCount === 1 ? 'Device' : 'Devices'}</span>
+            </span>
           </div>
-          <span className="text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-green-400" />
-            {activeUsersCount} <span className="hidden sm:inline">{activeUsersCount === 1 ? 'Device' : 'Devices'}</span>
-          </span>
         </div>
       </header>
 

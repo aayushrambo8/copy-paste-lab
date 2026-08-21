@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
+import GitHubDropdown from '@/components/GitHubDropdown';
 
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
@@ -44,6 +45,10 @@ export default function Landing() {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen p-4 md:p-5">
+      <div className="absolute top-4 right-4 z-20">
+        <GitHubDropdown />
+      </div>
+
       <div className="glass-panel p-6 md:p-12 text-center max-w-lg w-full rounded-3xl animate-[slideUp_0.6s_cubic-bezier(0.16,1,0.3,1)] z-10">
         <div className="inline-flex p-4 md:p-5 rounded-2xl bg-accent/10 border border-accent/20 mb-6">
           <Zap className="text-accent w-10 h-10 md:w-12 md:h-12" />
