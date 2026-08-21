@@ -15,12 +15,24 @@ export default function QRCodeModal({ isOpen, onClose, sessionId }: QRCodeModalP
   const [copiedCode, setCopiedCode] = useState(false);
   const [sessionUrl, setSessionUrl] = useState('');
 
+  const [qrSize, setQrSize] = useState(160);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionId) {
       const url = `${window.location.origin}/session?id=${sessionId}`;
       setSessionUrl(url);
     }
   }, [sessionId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => {
+      setQrSize(window.innerWidth < 640 ? 150 : 180);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,7 +68,7 @@ export default function QRCodeModal({ isOpen, onClose, sessionId }: QRCodeModalP
       onClick={onClose}
     >
       <div 
-        className="glass-panel p-6 md:p-8 text-center max-w-sm w-full rounded-3xl border border-accent/20 bg-black/70 backdrop-blur-xl shadow-[0_0_50px_rgba(204,255,0,0.1)] relative z-10 animate-[slideUp_0.3s_cubic-bezier(0.16,1,0.3,1)]"
+        className="glass-panel p-5 sm:p-6 md:p-8 text-center max-w-sm w-full rounded-3xl border border-accent/20 bg-black/70 backdrop-blur-xl shadow-[0_0_50px_rgba(204,255,0,0.1)] relative z-10 animate-[slideUp_0.3s_cubic-bezier(0.16,1,0.3,1)] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -69,7 +81,7 @@ export default function QRCodeModal({ isOpen, onClose, sessionId }: QRCodeModalP
         </button>
 
         {/* Title & Icon */}
-        <div className="inline-flex p-3 rounded-2xl bg-accent/10 border border-accent/20 mb-3 text-accent">
+        <div className="inline-flex p-2.5 sm:p-3 rounded-2xl bg-accent/10 border border-accent/20 mb-2 sm:mb-3 text-accent">
           <QrCode className="w-8 h-8" />
         </div>
         
@@ -77,22 +89,22 @@ export default function QRCodeModal({ isOpen, onClose, sessionId }: QRCodeModalP
           Scan to Join
         </h3>
         
-        <p className="text-gray-400 text-xs md:text-sm mb-5 flex items-center justify-center gap-1.5">
+        <p className="text-gray-400 text-xs md:text-sm mb-3 sm:mb-5 flex items-center justify-center gap-1.5">
           <Smartphone className="w-4 h-4 text-accent" />
           Point phone camera to join instantly
         </p>
 
         {/* QR Code Container */}
-        <div className="bg-white p-4 rounded-2xl inline-block shadow-2xl mb-5 border-4 border-accent/30 relative group">
+        <div className="bg-white p-3 sm:p-4 rounded-2xl inline-block shadow-2xl mb-3 sm:mb-5 border-4 border-accent/30 relative group">
           {sessionUrl ? (
             <QRCodeSVG
               value={sessionUrl}
-              size={180}
+              size={qrSize}
               level="H"
               includeMargin={false}
             />
           ) : (
-            <div className="w-[180px] h-[180px] flex items-center justify-center text-gray-500 text-sm">
+            <div className="flex items-center justify-center text-gray-500 text-sm" style={{ width: qrSize, height: qrSize }}>
               Generating...
             </div>
           )}

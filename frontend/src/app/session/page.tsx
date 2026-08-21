@@ -334,51 +334,51 @@ export default function Session() {
         </div>
       )}
 
-      <header className="glass-panel flex items-center justify-between px-6 py-4 sticky top-0 z-10 border-x-0 border-t-0 rounded-none">
+      <header className="glass-panel flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4 sticky top-0 z-10 border-x-0 border-t-0 rounded-none">
         <button
-          className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center"
+          className="bg-transparent border-none text-gray-400 cursor-pointer p-1.5 sm:p-2 rounded-full transition-all hover:bg-white/10 hover:text-white flex items-center justify-center"
           onClick={() => router.push('/')}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <div 
-            className="flex items-center gap-2 sm:gap-3 cursor-pointer py-1.5 px-3 rounded-lg transition-colors hover:bg-white/5"
+            className="flex items-center gap-1 sm:gap-2 cursor-pointer py-1 px-1.5 sm:py-1.5 sm:px-3 rounded-lg transition-colors hover:bg-white/5"
             onClick={copySessionId}
             title="Click to copy Session ID"
           >
             <span className="text-gray-400 text-sm hidden sm:inline">Session ID</span>
-            <div className="bg-accent/15 border border-accent/30 text-accent px-3 py-1 rounded-full font-mono text-base md:text-lg tracking-wide flex items-center">
+            <div className="bg-accent/15 border border-accent/30 text-accent px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-mono text-sm sm:text-base md:text-lg tracking-wide flex items-center">
               {sessionId}
               {copiedId ? (
-                <ShieldCheck className="w-4 h-4 text-green-400 ml-2" />
+                <ShieldCheck className="w-3.5 h-3.5 text-green-400 ml-1.5 sm:ml-2" />
               ) : (
-                <Copy className="w-4 h-4 ml-2 opacity-50" />
+                <Copy className="w-3.5 h-3.5 ml-1.5 sm:ml-2 opacity-50" />
               )}
             </div>
           </div>
 
           <button
             onClick={() => setIsQRModalOpen(true)}
-            className="flex items-center gap-1.5 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.15)]"
+            className="flex items-center gap-1 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.15)]"
             title="Show QR Code to share session"
           >
-            <QrCode className="w-4 h-4" />
-            <span>QR Code</span>
+            <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">QR Code</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <GitHubDropdown />
 
-          <div className="flex items-center gap-2 bg-black/40 border border-glass-border px-3 py-1.5 rounded-full">
-            <div className="relative flex h-3 w-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-black/40 border border-glass-border px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-full">
+            <div className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500"></span>
             </div>
-            <span className="text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-green-400" />
+            <span className="text-[10px] sm:text-xs text-gray-300 font-medium tracking-wide flex items-center gap-1 sm:gap-1.5">
+              <Activity className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-green-400" />
               {activeUsersCount} <span className="hidden sm:inline">{activeUsersCount === 1 ? 'Device' : 'Devices'}</span>
             </span>
           </div>
@@ -409,7 +409,7 @@ export default function Session() {
                     <Copy className="w-5 h-5 md:w-6 md:h-6" />
                     <span>{isUploading ? 'Uploading...' : 'Tap to Paste'}</span>
                   </div>
-                  <span className="text-xs md:text-sm text-gray-400 mt-1">Instantly paste text or images from clipboard</span>
+                  <span className="text-xs md:text-sm text-gray-400 mt-1 hidden sm:inline-block">Instantly paste text or images from clipboard</span>
                 </div>
               </button>
               
@@ -442,7 +442,7 @@ export default function Session() {
             <p className="max-w-md">Press <kbd className="bg-white/10 px-2 py-1 rounded text-white text-sm mx-1">Ctrl+V</kbd> anywhere, or use the Paste box below.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-28">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-32 md:pb-28">
             {items.map(item => (
               <ClipboardItem key={item.id} item={item} />
             ))}

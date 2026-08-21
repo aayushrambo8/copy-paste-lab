@@ -34,15 +34,15 @@ export default function GitHubDropdown() {
       {/* Dropdown Toggle Button */}
       <button
         onClick={toggleDropdown}
-        className={`flex items-center gap-2 bg-black/40 border border-glass-border hover:border-accent/40 text-gray-300 hover:text-white px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.05)] ${
+        className={`flex items-center gap-1 sm:gap-2 bg-black/40 border border-glass-border hover:border-accent/40 text-gray-300 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.05)] ${
           isOpen ? 'border-accent/50 text-white bg-accent/10 shadow-[0_0_15px_rgba(204,255,0,0.15)]' : ''
         }`}
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <Github className="w-4 h-4 text-accent" />
+        <Github className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
         <span className="hidden sm:inline">GitHub</span>
-        <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180 text-accent' : ''}`} />
+        <ChevronDown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180 text-accent' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
