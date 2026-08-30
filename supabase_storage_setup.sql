@@ -1,8 +1,3 @@
--- ==============================================================================
--- Supabase Storage Setup for Paste Labs
--- Run this script in the Supabase Dashboard -> SQL Editor for your project.
--- ==============================================================================
-
 -- 1. Ensure the 'clipboard-uploads' bucket exists and is set to public.
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('clipboard-uploads', 'clipboard-uploads', true, 5242880, NULL)
