@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, ArrowRight, Zap, Type, Image as ImageIcon, File } from 'lucide-react';
+import GitHubDropdown from '@/components/GitHubDropdown';
 
 export default function Landing() {
   const [sessionId, setSessionId] = useState('');
@@ -44,7 +45,11 @@ export default function Landing() {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen p-4 md:p-5">
-      <div className="glass-panel p-6 md:p-12 text-center max-w-lg w-full rounded-3xl animate-[slideUp_0.6s_cubic-bezier(0.16,1,0.3,1)] z-10">
+      <div className="absolute top-4 right-4 z-20">
+        <GitHubDropdown />
+      </div>
+
+      <div className="glass-panel p-5 sm:p-6 md:p-12 text-center max-w-lg w-full rounded-3xl animate-[slideUp_0.6s_cubic-bezier(0.16,1,0.3,1)] z-10">
         <div className="inline-flex p-4 md:p-5 rounded-2xl bg-accent/10 border border-accent/20 mb-6">
           <Zap className="text-accent w-10 h-10 md:w-12 md:h-12" />
         </div>
@@ -94,13 +99,13 @@ export default function Landing() {
               placeholder="Enter 8-digit ID" 
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
-              className="flex-1 bg-black/20 border border-glass-border rounded-xl px-4 py-3 sm:py-0 text-white text-base md:text-lg outline-none transition-colors text-center tracking-widest focus:border-accent"
+              className="flex-1 bg-black/20 border border-glass-border rounded-xl px-4 py-3 text-white text-base md:text-lg outline-none transition-colors text-center tracking-widest focus:border-accent"
               maxLength={8}
             />
             <button 
               type="submit" 
               disabled={sessionId.length !== 8}
-              className="flex items-center justify-center gap-2 px-6 rounded-xl font-medium bg-glass border border-glass-border text-white hover:bg-white/10 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium bg-glass border border-glass-border text-white hover:bg-white/10 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               <span>Join</span>
               <ArrowRight className="w-5 h-5" />
