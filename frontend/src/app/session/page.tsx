@@ -56,40 +56,87 @@ export default function Session() {
     }
   }, [router]);
 
-  // Subscribe to the realtime channel for this session.
-  // There's no database record to create/check: the channel exists
-  // implicitly the moment any device subscribes to it.
   useEffect(() => {
     if (!sessionId) return;
 
+    let isMounted = true;
+    let channel: RealtimeChannel;
     const clientId = Math.random().toString(36).substr(2, 9);
-    const channel = supabase.channel(`session:${sessionId}`, {
-      config: {
-        presence: { key: clientId },
-      },
-    });
-    channelRef.current = channel;
 
-    channel
-      .on('broadcast', { event: 'clipboard' }, ({ payload }) => {
-        const item = payload as ItemType;
-        setItems((prev) => {
-          if (prev.some((i) => i.id === item.id)) return prev;
-          return [item, ...prev];
-        });
-      })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        setActiveUsersCount(Math.max(1, Object.keys(state).length));
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
+    const setupChannel = async () => {
+      // Small delay to mitigate React Strict Mode race condition with removeChannel
+      await new Promise(resolve => setTimeout(resolve, 50));
+      if (!isMounted) return;
+
+      channel = supabase.channel(`session:${sessionId}`, {
+        config: {
+          presence: { key: clientId },
+        },
       });
+      channelRef.current = channel;
+
+      channel
+        .on('broadcast', { event: 'clipboard' }, ({ payload }) => {
+          const item = payload as ItemType;
+          setItems((prev) => {
+            if (prev.some((i) => i.id === item.id)) return prev;
+            return [item, ...prev];
+          });
+        })
+        .on('broadcast', { event: 'sync_request' }, () => {
+          // Send all current items to the new user
+          setItems((currentItems) => {
+            if (currentItems.length > 0 && channel) {
+              channel.send({
+                type: 'broadcast',
+                event: 'sync_response',
+                payload: currentItems,
+              });
+            }
+            return currentItems;
+          });
+        })
+        .on('broadcast', { event: 'sync_response' }, ({ payload }) => {
+          const receivedItems = payload as ItemType[];
+          setItems((prev) => {
+            const newItems = [...prev];
+            let changed = false;
+            for (const item of receivedItems) {
+              if (!newItems.some((i) => i.id === item.id)) {
+                newItems.push(item);
+                changed = true;
+              }
+            }
+            if (changed) {
+              return newItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            }
+            return prev;
+          });
+        })
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          setActiveUsersCount(Math.max(1, Object.keys(state).length));
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED' && isMounted) {
+            await channel.track({ online_at: new Date().toISOString() });
+            // Ask for current items
+            channel.send({
+              type: 'broadcast',
+              event: 'sync_request',
+              payload: {},
+            });
+          }
+        });
+    };
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       channelRef.current = null;
     };
   }, [sessionId]);
